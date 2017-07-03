@@ -1,4 +1,4 @@
-// src/main/scala/modulework/Http-Client/DuckDuckGo.scala
+// src/main/scala/modulework/Http-Client/DuckDuckGoClient.scala
 package httpclient
 
 import httpclient.HttpClient._
@@ -11,7 +11,7 @@ import scala.collection.mutable.{ArrayBuffer => AB}
 
 object DuckDuckGo {
 
-  trait DuckDuckGoAPI extends API {
+  trait DuckDuckGoClient extends HttpClient {
     // Make a search through DuckDuckGo's Instant Response API
     def searchDDG(query: String): Search = {
       val requestBody = Map("q" -> s"$query", "format" -> "json")

@@ -9,12 +9,7 @@ object HttpClient{
   case class HttpResponse(header: Map[String,String], body: String, statusCode: Int)
 
   trait HttpClient {
-    def executeHttpPost(url: String, body: Map[String,String]): HttpResponse
-    def executeHttpGet(url: String): HttpResponse
-  }
-
-  trait API extends HttpClient {
-
+    
     def executeHttpPost(url: String, body: Map[String,String]): HttpResponse = {
       val asyncHttpClient = new DefaultAsyncHttpClient()
       val request = asyncHttpClient.preparePost(s"$url")

@@ -8,8 +8,11 @@ import scala.collection.mutable.{ArrayBuffer => AB}
 
 object LookItUp {
 
+  import lookitup.server.LIUServer
+
   class LookItUp(userGroup: UserGroup = new UserGroup())
-        extends SearchEngine("Look It Up", userGroup) with DuckDuckGoAPI {
+        extends SearchEngine("Look It Up", userGroup) with DuckDuckGoClient {
+
     // Handle User Search Request
     def userSearch(userName: String, query: String): Unit =
       userGroup.get(userName) match {

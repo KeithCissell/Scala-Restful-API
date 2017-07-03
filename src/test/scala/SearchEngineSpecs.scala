@@ -42,9 +42,9 @@ object SearchEngineSpecs extends Specification {
   val postTestURL = "https://httpbin.org/post"
   val postMap = Map("message" -> "hello", "from" -> "keith", "to" -> "world")
 
-  // Create API
-  class TestAPI extends API
-  val testAPI = new TestAPI
+  // Create HttpClient
+  class TestClient extends HttpClient
+  val testClient = new TestClient
 
   // Create SearchEngines
   val unpopularSearchEngine = new SearchEngine("Unpopular Engine", new UserGroup(AB(Lewis, Connor)))
@@ -142,14 +142,14 @@ object SearchEngineSpecs extends Specification {
     }
   }
 
-  // API Tests
+  // HttpClient Tests
   "\nAPI allows use of HTTP Client functions that" should {
 
     "Successfully make a Get request" in {
-      testAPI.executeHttpGet(getTestURL).statusCode == 200
+      testClient.executeHttpGet(getTestURL).statusCode == 200
     }
     "Successfully make a Post request" in {
-      testAPI.executeHttpPost(postTestURL, postMap).statusCode == 200
+      testClient.executeHttpPost(postTestURL, postMap).statusCode == 200
     }
   }
 

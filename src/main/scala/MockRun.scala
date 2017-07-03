@@ -3,6 +3,9 @@ import milestoneproject.LookItUp._
 import searchengine.SearchEngine._
 import scala.collection.mutable.{ArrayBuffer => AB}
 
+import org.http4s._
+import org.http4s.dsl._
+
 
 object LookItUpMockRun {
 
@@ -62,5 +65,6 @@ object LookItUpMockRun {
     println(Curly)
     LookItUp.userSearch(Curly.name, "testing")
     println(Curly)
+    //println(LookItUp.server(Request(Method.GET, uri("/pong"))))
   }
 }
