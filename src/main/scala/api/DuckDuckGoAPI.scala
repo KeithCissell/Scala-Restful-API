@@ -9,7 +9,7 @@ import scala.util.matching.Regex
 import scala.collection.mutable.{ArrayBuffer => AB}
 
 
-object DuckDuckGo {
+object DuckDuckGoClient {
 
   trait DuckDuckGoClient extends HttpClient {
     // Make a search through DuckDuckGo's Instant Response API

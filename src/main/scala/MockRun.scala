@@ -1,5 +1,6 @@
 // src/main/scala/milestoneproject/MockRun.scala
-import milestoneproject.LookItUp._
+import lookitup.LookItUp
+import httpclient.LookItUpAPI._
 import searchengine.SearchEngine._
 import scala.collection.mutable.{ArrayBuffer => AB}
 
@@ -48,6 +49,11 @@ object LookItUpMockRun {
     // Create LookItUp SearchEngine
     val LookItUp = new LookItUp(allUsers)
 
+    // Mock HTTP Client
+    class LIUAPI extends LookItUpAPI
+    val LIU = new LIUAPI
+
+
     /******************************************************
     **                TEST MOCK DATA
     ******************************************************/
@@ -62,9 +68,12 @@ object LookItUpMockRun {
     // println(s"The most frequent search on this engine: ${LookItUp.mostFrequentSearch}")
 
     // Make a search
-    println(Curly)
-    LookItUp.userSearch(Curly.name, "testing")
-    println(Curly)
-    //println(LookItUp.server(Request(Method.GET, uri("/pong"))))
+    //println(Curly)
+    //LookItUp.userSearch(Curly.name, "testing")
+    //println(Curly)
+
+    // Make requests to the server
+    LIU.ping
+
   }
 }

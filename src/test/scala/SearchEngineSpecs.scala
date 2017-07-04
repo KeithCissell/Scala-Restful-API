@@ -1,8 +1,8 @@
 // src/test/scala/SearchEngineSpecs.scala
+import lookitup.LookItUp._
 import httpclient.HttpClient._
-import searchengine.SearchEngine._
-import milestoneproject.LookItUp._
 import org.specs2.specification._
+import searchengine.SearchEngine._
 import org.specs2.mutable.Specification
 import scala.collection.mutable.{ArrayBuffer => AB}
 
