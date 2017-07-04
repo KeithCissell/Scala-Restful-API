@@ -30,7 +30,7 @@ object LIUService {
     case req @ POST -> Root / "change_password" =>
       Ok(Json.obj("message" -> Json.fromString("Change Password")))
 
-    case req @ POST -> Root / "search?q=:searchString" =>
+    case req @ POST -> Root / "search" :? searchString =>
       Ok(Json.obj("message" -> Json.fromString("Search")))
 
     case req @ GET -> Root / "search_terms" =>

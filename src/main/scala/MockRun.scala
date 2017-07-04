@@ -74,6 +74,13 @@ object LookItUpMockRun {
 
     // Make requests to the server
     LIU.ping
+    LIU.createUser("keith", "password")
+    LIU.changePassword("keith", "password", "wordpass")
+    LIU.search("keith", "wordpass", "Cardinals")
+    LIU.getAllSearches
+    LIU.getUserSearches("keith", "wordpass")
+    LIU.mostCommonSearch
+    LIU.userMostCommonSearch("keith", "wordpass")
 
   }
 }
