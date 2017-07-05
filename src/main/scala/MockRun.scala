@@ -1,7 +1,11 @@
 // src/main/scala/milestoneproject/MockRun.scala
-import milestoneproject.LookItUp._
+import lookitup.LookItUp
+import httpclient.LookItUpAPI._
 import searchengine.SearchEngine._
 import scala.collection.mutable.{ArrayBuffer => AB}
+
+import org.http4s._
+import org.http4s.dsl._
 
 
 object LookItUpMockRun {
@@ -45,6 +49,11 @@ object LookItUpMockRun {
     // Create LookItUp SearchEngine
     val LookItUp = new LookItUp(allUsers)
 
+    // Mock HTTP Client
+    class LIUAPI extends LookItUpAPI
+    val LIU = new LIUAPI
+
+
     /******************************************************
     **                TEST MOCK DATA
     ******************************************************/
@@ -59,8 +68,19 @@ object LookItUpMockRun {
     // println(s"The most frequent search on this engine: ${LookItUp.mostFrequentSearch}")
 
     // Make a search
-    println(Curly)
-    LookItUp.userSearch(Curly.name, "testing")
-    println(Curly)
+    //println(Curly)
+    //LookItUp.userSearch(Curly.name, "testing")
+    //println(Curly)
+
+    // Make requests to the server
+    LIU.ping
+    LIU.createUser("keith", "password")
+    LIU.changePassword("keith", "password", "wordpass")
+    LIU.search("keith", "wordpass", "Cardinals")
+    LIU.getAllSearches
+    LIU.getUserSearches("keith", "wordpass")
+    LIU.mostCommonSearch
+    LIU.userMostCommonSearch("keith", "wordpass")
+
   }
 }

@@ -1,10 +1,11 @@
 // src/main/scala/milestoneproject/SearchEngine.scala
 package searchengine
 
-import httpclient.DuckDuckGo._
+import httpclient.DuckDuckGoClient._
 import scala.collection.mutable.{ArrayBuffer => AB}
 
 object SearchEngine {
+
   // A general list of methods to be used by a repository
   trait Repository[A, I] {
     def isEmpty: Boolean
