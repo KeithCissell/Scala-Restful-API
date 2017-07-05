@@ -2,29 +2,34 @@
 package httpclient
 import org.asynchttpclient._
 import java.util.concurrent.Future
+import org.json4s.jackson.Serialization
 import scala.collection.JavaConversions._
 
 object HttpClient{
 
+  implicit val formats = org.json4s.DefaultFormats
+
   case class HttpResponse(header: Map[String,String], body: String, statusCode: Int)
 
   trait HttpClient {
-    
+
     def executeHttpPost(url: String, body: Map[String,String]): HttpResponse = {
+      val jsonBody = Serialization.write(body)
       val asyncHttpClient = new DefaultAsyncHttpClient()
-      val request = asyncHttpClient.preparePost(s"$url")
-      for ((n,v) <- body) request.addFormParam(n, v)
+      val request = asyncHttpClient.preparePost(url)
+      request.setHeader("Content-Type", "application/json")
+      request.setBody(jsonBody)
       val response = request.execute().get()
       asyncHttpClient.close()
-      formatResponse(response)
+      return formatResponse(response)
     }
 
     def executeHttpGet(url: String): HttpResponse = {
       val asyncHttpClient = new DefaultAsyncHttpClient()
-      val request = asyncHttpClient.prepareGet(s"$url")
+      val request = asyncHttpClient.prepareGet(url)
       val response = request.execute().get()
       asyncHttpClient.close()
-      formatResponse(response)
+      return formatResponse(response)
     }
 
     def formatResponse(r: Response): HttpResponse = {

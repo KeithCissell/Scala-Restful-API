@@ -1,5 +1,5 @@
 // src/test/scala/SearchEngineSpecs.scala
-import lookitup.LookItUp._
+import lookitup.LookItUp
 import httpclient.HttpClient._
 import org.specs2.specification._
 import searchengine.SearchEngine._

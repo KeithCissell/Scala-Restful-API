@@ -45,7 +45,6 @@ object LookItUpAPI {
       // Handle response
       val message = resp.statusCode match {
         case 200  => s"Successfully changed password for: $username"
-        case 403  => s"SOMETHING WENT WRONG"
         case _    => s"ERROR. Status Code: ${resp.statusCode}"
       }
       println(message)

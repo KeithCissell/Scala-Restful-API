@@ -1,7 +1,6 @@
 // src/main/scala/milestoneproject/SearchEngine.scala
 package searchengine
 
-import httpclient.DuckDuckGoClient._
 import scala.collection.mutable.{ArrayBuffer => AB}
 
 object SearchEngine {
@@ -41,7 +40,7 @@ object SearchEngine {
   }
 
   // A search engine user that holds name, password and search history
-  class User(val name: String, val password: String,
+  case class User(val name: String, var password: String,
       var searchHistory: SearchHistory = SearchHistory()) {
     def mostFrequentSearch: String = {
       if (!searchHistory.isEmpty) {
@@ -58,9 +57,9 @@ object SearchEngine {
   }
 
   // A group of search engine users
-  class UserGroup(private var users: Map[String,User] = Map.empty) extends Repository[User,String] {
-    // Allows UserGroup to be constructed with a ArrayBuffer of users
-    def this(users: AB[User]) {
+  class UserGroup(var users: Map[String,User] = Map.empty) extends Repository[User,String] {
+    // Allows UserGroup to be constructed with a Seq of users
+    def this(users: Seq[User]) {
       this((users.map(_.name) zip users).toMap)
     }
     def isEmpty: Boolean = users.isEmpty
@@ -68,7 +67,7 @@ object SearchEngine {
     def getAll: AB[User] = users.values.to[AB]
     def get(id: String): Option[User] = if (users.contains(id)) Some(users(id)) else None
     def create(u: User): Unit = {
-      if (users.contains(u.name)) println(s"User already exists: $u.name")
+      if (users.contains(u.name)) println(s"User already exists: ${u.name}")
       else users = users + (u.name -> u)
     }
     def update(u: User): Unit = users = users + (u.name -> u)
@@ -76,10 +75,17 @@ object SearchEngine {
   }
 
   // A search engine that holds a UserGroup
-  class SearchEngine(val name: String, var userGroup: UserGroup = new UserGroup()) {
-    def engineSearchHistory: AB[Search] = {
-      (for (usr <- userGroup.getAll) yield usr.searchHistory.getAll).flatten
+  class SearchEngine(val name: String, users: Map[String,User] = Map.empty)
+      extends UserGroup(users) {
+    // Allows SearchEngine to be constructed with a Seq of users
+    def this(name: String, users: Seq[User]) {
+      this(name, (users.map(_.name) zip users).toMap)
     }
+
+    def engineSearchHistory: AB[Search] = {
+      (for (usr <- getAll) yield usr.searchHistory.getAll).flatten
+    }
+
     def mostFrequentSearch: String = {
       val history = engineSearchHistory
       if (!history.isEmpty) {
@@ -88,6 +94,22 @@ object SearchEngine {
         }
         frequencies.maxBy(_._2)._1.value
       } else "No Searches Found"
+    }
+
+    def changePassword(username: String, newPassword: String): Unit = get(username) match {
+      case Some(user) => {
+        user.password = newPassword
+        update(user)
+      }
+      case None => println(s"Coundn't find: $username")
+    }
+
+    def validUser(u: String, p: String): Boolean = get(u) match {
+      case Some(user) => user.password match {
+        case up if up == p  => true
+        case _              => false
+      }
+      case None             => false
     }
   }
 
