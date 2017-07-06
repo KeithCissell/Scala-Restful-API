@@ -12,13 +12,14 @@ class LookItUp(users: Map[String,User] = Map.empty)
   }
 
   // Handle User Search Request
-  def userSearch(userName: String, query: String): Unit =
-    users.get(userName) match {
-      case None       => println(s"User not found: '${userName}'\n")
+  def userSearch(username: String, query: String): Option[Search] =
+    get(username) match {
+      case None       => None
       case Some(user) => {
         val searchResult = searchDDG(query)
         user.searchHistory.create(searchResult)
         update(user)
+        Some(searchResult)
       }
   }
 }

@@ -13,6 +13,15 @@ import scala.collection.mutable.{ArrayBuffer => AB}
 object DuckDuckGoAPI {
 
   trait DuckDuckGoAPI extends HttpClient {
+
+    // Make a search through DuckDuckGo's Instant Response API
+    def searchDDG(query: String): Search = {
+      val requestBody = Map("q" -> s"$query", "format" -> "json")
+      val response = executeHttpPost("https://duckduckgo.com", requestBody)
+      val results = extractResults(response.body).to[AB]
+      Search(query, results)
+    }
+
     // Overide POST execution
     override def executeHttpPost(url: String, body: Map[String,String]): HttpResponse = {
       val asyncHttpClient = new DefaultAsyncHttpClient()
@@ -21,14 +30,6 @@ object DuckDuckGoAPI {
       val response = request.execute().get()
       asyncHttpClient.close()
       return formatResponse(response)
-    }
-
-    // Make a search through DuckDuckGo's Instant Response API
-    def searchDDG(query: String): Search = {
-      val requestBody = Map("q" -> s"$query", "format" -> "json")
-      val response = executeHttpPost("https://duckduckgo.com", requestBody)
-      val results = extractResults(response.body).to[AB]
-      Search(query, results)
     }
 
     // Extract results from the returned Json data

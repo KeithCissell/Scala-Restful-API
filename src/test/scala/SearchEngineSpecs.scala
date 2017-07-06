@@ -1,6 +1,7 @@
 // src/test/scala/SearchEngineSpecs.scala
 import lookitup.LookItUp
 import httpclient.HttpClient._
+import httpclient.DuckDuckGoAPI._
 import org.specs2.specification._
 import searchengine.SearchEngine._
 import org.specs2.mutable.Specification
