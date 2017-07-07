@@ -15,7 +15,7 @@ object LookItUpAPI {
 
     val hostRoot = "http://localhost:8080"
 
-    def ping: Unit = {
+    def ping: HttpResponse = {
       val reqURL = hostRoot + "/ping"
       val resp = executeHttpGet(reqURL)
       // Handle response
@@ -24,9 +24,10 @@ object LookItUpAPI {
         case _    => s"ERROR. Status Code: ${resp.statusCode}"
       }
       println(message)
+      return resp
     }
 
-    def createUser(username: String, password: String): Unit = {
+    def createUser(username: String, password: String): HttpResponse = {
       val reqURL = hostRoot + "/create_user"
       val reqBody = Map("username" -> username, "password" -> password)
       val resp = executeHttpPost(reqURL, reqBody)
@@ -37,9 +38,10 @@ object LookItUpAPI {
         case _    => s"ERROR. Status Code: ${resp.statusCode}"
       }
       println(message)
+      return resp
     }
 
-    def changePassword(username: String, oldP: String, newP: String): Unit = {
+    def changePassword(username: String, oldP: String, newP: String): HttpResponse = {
       val reqURL = hostRoot + "/change_password"
       val reqBody = Map("username" -> username, "oldPassword" -> oldP, "newPassword" -> newP)
       val resp = executeHttpPost(reqURL, reqBody)
@@ -49,9 +51,10 @@ object LookItUpAPI {
         case _    => s"ERROR. Status Code: ${resp.statusCode}"
       }
       println(message)
+      return resp
     }
 
-    def search(username: String, password: String, query: String): Unit = {
+    def search(username: String, password: String, query: String): HttpResponse = {
       val reqURL = hostRoot + "/search?q=" + query
       val reqBody = Map("username" -> username, "password" -> password)
       val resp = executeHttpPost(reqURL, reqBody)
@@ -62,9 +65,10 @@ object LookItUpAPI {
         case _    => s"ERROR. Status Code: ${resp.statusCode}"
       }
       println(message)
+      return resp
     }
 
-    def getAllSearches: Unit = {
+    def getAllSearches: HttpResponse = {
       val reqURL = hostRoot + "/search_terms"
       val resp = executeHttpGet(reqURL)
       // Handle response
@@ -73,9 +77,10 @@ object LookItUpAPI {
         case _    => s"ERROR. Status Code: ${resp.statusCode}"
       }
       println(message)
+      return resp
     }
 
-    def getUserSearches(username: String, password: String): Unit = {
+    def getUserSearches(username: String, password: String): HttpResponse = {
       val reqURL = hostRoot + "/search_terms"
       val reqBody = Map("username" -> username, "password" -> password)
       val resp = executeHttpPost(reqURL, reqBody)
@@ -86,9 +91,10 @@ object LookItUpAPI {
         case _    => s"ERROR. Status Code: ${resp.statusCode}"
       }
       println(message)
+      return resp
     }
 
-    def mostFrequentSearch: Unit = {
+    def mostFrequentSearch: HttpResponse = {
       val reqURL = hostRoot + "/most_common_search"
       val resp = executeHttpGet(reqURL)
       // Handle response
@@ -97,9 +103,10 @@ object LookItUpAPI {
         case _    => s"ERROR. Status Code: ${resp.statusCode}"
       }
       println(message)
+      return resp
     }
 
-    def userMostFrequentSearch(username: String, password: String): Unit = {
+    def userMostFrequentSearch(username: String, password: String): HttpResponse = {
       val reqURL = hostRoot + "/most_common_search"
       val reqBody = Map("username" -> username, "password" -> password)
       val resp = executeHttpPost(reqURL, reqBody)
@@ -110,6 +117,7 @@ object LookItUpAPI {
         case _    => s"ERROR. Status Code: ${resp.statusCode}"
       }
       println(message)
+      return resp
     }
 
   }

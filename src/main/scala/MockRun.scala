@@ -50,7 +50,7 @@ object LookItUpMockRun {
     // Create LookItUp SearchEngine
     val lookItUp = new LookItUp(allUsers)
 
-    // Mock HTTP Client
+    // LookItUp client-API
     class LIUAPI extends LookItUpAPI
     val LIU = new LIUAPI
 
@@ -74,7 +74,7 @@ object LookItUpMockRun {
     // println(Curly)
 
     // // Make requests to the server
-    // LIU.ping
+    LIU.ping
     LIU.createUser("keith", "password")
     LIU.changePassword("keith", "password", "wordpass")
     LIU.search("keith", "wordpass", "Cardinals")
