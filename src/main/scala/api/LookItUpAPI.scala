@@ -13,10 +13,10 @@ object LookItUpAPI {
 
   trait LookItUpAPI extends HttpClient {
 
-    val hostRoot = "http://localhost:8080"
+    val host = "http://localhost:8080"
 
     def ping: HttpResponse = {
-      val reqURL = hostRoot + "/ping"
+      val reqURL = host + "/ping"
       val resp = executeHttpGet(reqURL)
       // Handle response
       val message = resp.statusCode match {
@@ -28,7 +28,7 @@ object LookItUpAPI {
     }
 
     def createUser(username: String, password: String): HttpResponse = {
-      val reqURL = hostRoot + "/create_user"
+      val reqURL = host + "/create_user"
       val reqBody = Map("username" -> username, "password" -> password)
       val resp = executeHttpPost(reqURL, reqBody)
       // Handle response
@@ -42,7 +42,7 @@ object LookItUpAPI {
     }
 
     def changePassword(username: String, oldP: String, newP: String): HttpResponse = {
-      val reqURL = hostRoot + "/change_password"
+      val reqURL = host + "/change_password"
       val reqBody = Map("username" -> username, "oldPassword" -> oldP, "newPassword" -> newP)
       val resp = executeHttpPost(reqURL, reqBody)
       // Handle response
@@ -55,7 +55,7 @@ object LookItUpAPI {
     }
 
     def search(username: String, password: String, query: String): HttpResponse = {
-      val reqURL = hostRoot + "/search?q=" + query
+      val reqURL = host + "/search?q=" + query
       val reqBody = Map("username" -> username, "password" -> password)
       val resp = executeHttpPost(reqURL, reqBody)
       // Handle response
@@ -69,7 +69,7 @@ object LookItUpAPI {
     }
 
     def getAllSearches: HttpResponse = {
-      val reqURL = hostRoot + "/search_terms"
+      val reqURL = host + "/search_terms"
       val resp = executeHttpGet(reqURL)
       // Handle response
       val message = resp.statusCode match {
@@ -81,7 +81,7 @@ object LookItUpAPI {
     }
 
     def getUserSearches(username: String, password: String): HttpResponse = {
-      val reqURL = hostRoot + "/search_terms"
+      val reqURL = host + "/search_terms"
       val reqBody = Map("username" -> username, "password" -> password)
       val resp = executeHttpPost(reqURL, reqBody)
       // Handle response
@@ -95,7 +95,7 @@ object LookItUpAPI {
     }
 
     def mostFrequentSearch: HttpResponse = {
-      val reqURL = hostRoot + "/most_common_search"
+      val reqURL = host + "/most_common_search"
       val resp = executeHttpGet(reqURL)
       // Handle response
       val message = resp.statusCode match {
@@ -107,7 +107,7 @@ object LookItUpAPI {
     }
 
     def userMostFrequentSearch(username: String, password: String): HttpResponse = {
-      val reqURL = hostRoot + "/most_common_search"
+      val reqURL = host + "/most_common_search"
       val reqBody = Map("username" -> username, "password" -> password)
       val resp = executeHttpPost(reqURL, reqBody)
       // Handle response

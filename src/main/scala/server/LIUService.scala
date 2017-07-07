@@ -23,7 +23,7 @@ object LIUService {
 
   // This service plugs into the server to handle incoming requests
   val service = HttpService {
-    case req @ GET  -> Root / "ping"                    => Ok()
+    case req @ GET  -> Root / "ping"                    => Ok("Pong")
     case req @ POST -> Root / "create_user"             => createUser(req)
     case req @ POST -> Root / "change_password"         => changePassword(req)
     case req @ POST -> Root / "search" :? searchString  => search(req, searchString("q")(0))

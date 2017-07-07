@@ -60,30 +60,27 @@ object LookItUpMockRun {
     ******************************************************/
 
     // Print out info on all the users
-    // for (user <- LookItUp.users.getAll) println(user)
+    // for (user <- lookItUp.getAll) println(user)
 
     // Find each user's most frequent search
-    // for (user <- LookItUp.userGroup.getAll) println(s"${user.name}'s most frequent search: ${user.mostFrequentSearch}")
+    // for (user <- lookItUp.getAll) println(s"${user.name}'s most frequent search: ${user.mostFrequentSearch}")
 
     // Find the most frequent search on the engine
-    // println(s"The most frequent search on this engine: ${LookItUp.mostFrequentSearch}")
+    // println(s"The most frequent search on this engine: ${lookItUp.mostFrequentSearch}")
 
     // Make a search
     // println(Curly)
     // lookItUp.userSearch(Curly.name, "testing")
     // println(Curly)
 
-    // // Make requests to the server
-    LIU.ping
-    LIU.createUser("keith", "password")
-    LIU.changePassword("keith", "password", "wordpass")
-    LIU.search("keith", "wordpass", "Cardinals")
-    LIU.getAllSearches
-    LIU.getUserSearches("keith", "wordpass")
-    LIU.mostFrequentSearch
-    LIU.userMostFrequentSearch("keith", "wordpass")
-
-    // Test mostFrequentSearch
-    //println(lookItUp.mostFrequentSearch)
+    // Make requests to the server
+    // LIU.ping
+    // LIU.createUser("keith", "password")
+    // LIU.changePassword("keith", "password", "wordpass")
+    // LIU.search("keith", "wordpass", "Cardinals")
+    // LIU.getAllSearches
+    // LIU.getUserSearches("keith", "wordpass")
+    // LIU.mostFrequentSearch
+    // LIU.userMostFrequentSearch("keith", "wordpass")
   }
 }
