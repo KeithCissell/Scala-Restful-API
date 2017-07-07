@@ -81,11 +81,9 @@ object LookItUpMockRun {
     LIU.getAllSearches
     LIU.getUserSearches("keith", "wordpass")
     LIU.mostFrequentSearch
-    // LIU.userMostCommonSearch("keith", "wordpass")
+    LIU.userMostFrequentSearch("keith", "wordpass")
 
-    // Test validUser
-    // println(lookItUp.validUser("Keith", ";kjlhlkjh"))
-    // println(lookItUp.validUser("Keith", "StrongPassWord"))
-    // println(lookItUp.validUser("Nathan", "no"))
+    // Test mostFrequentSearch
+    //println(lookItUp.mostFrequentSearch)
   }
 }

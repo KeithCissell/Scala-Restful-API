@@ -30,7 +30,7 @@ object LIUService {
     case req @ GET  -> Root / "search_terms"            => Ok(encodeSearches(LIU.engineSearchHistory))
     case req @ POST -> Root / "search_terms"            => getUserSearches(req)
     case req @ GET  -> Root / "most_common_search"      => Ok(encodeTerms(LIU.mostFrequentSearch))
-    case req @ POST -> Root / "most_common_search"      => Ok(Json.obj("message" -> Json.fromString("User Common Searches")))
+    case req @ POST -> Root / "most_common_search"      => userMostFrequentSearch(req)
   }
 
   // Retreives a field from io.circe.Json data
@@ -115,6 +115,13 @@ object LIUService {
     }
   }
 
-  // def userMostFrequentSearch(req: Request): Unit
+  def userMostFrequentSearch(req: Request): Task[Response] = req.decode[Json]{ data =>
+    val username = extractField("username", data)
+    val password = extractField("password", data)
+    LIU.validUser(username, password) match {
+      case false  => Forbidden(data)
+      case true   => Ok(encodeTerms(LIU.users(username.get).mostFrequentSearch))
+    }
+  }
 
 }

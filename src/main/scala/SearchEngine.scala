@@ -43,13 +43,15 @@ object SearchEngine {
   // A search engine user that holds name, password and search history
   case class User(val name: String, var password: String,
       var searchHistory: SearchHistory = SearchHistory()) {
-    def mostFrequentSearch: String = {
-      if (!searchHistory.isEmpty) {
-        val frequencies = for (s <- searchHistory.getAll) yield {
-          s -> searchHistory.getAll.count(_ == s)
-        }
-        frequencies.maxBy(_._2)._1.value
-      } else "No Search History"
+    def mostFrequentSearch: Seq[String] = {
+      val searches = searchHistory.getAll
+      if (!searches.isEmpty) {
+        var results: AB[String] = AB.empty
+        val frequencies = searches.groupBy(_.value).mapValues(_.size)
+        val mostFrequent = frequencies.maxBy(_._2)
+        for ((s,f) <- frequencies) if (f == mostFrequent._2) results += s
+        return results.toSeq
+      } else Seq.empty
     }
     override def toString: String = {
       if (searchHistory.isEmpty) s"${name}'s Search History\nEmpty"
@@ -94,11 +96,11 @@ object SearchEngine {
     def mostFrequentSearch: Seq[String] = {
       val searches = engineSearchHistory
       if (!searches.isEmpty) {
-        val results = Seq.empty
+        var results: AB[String] = AB.empty
         val frequencies = searches.groupBy(_.value).mapValues(_.size)
         val mostFrequent = frequencies.maxBy(_._2)
-        for (v <- frequencies) if (v._2 == mostFrequent._2) results +: v._1
-        return results
+        for ((s,f) <- frequencies) if (f == mostFrequent._2) results += s
+        return results.toSeq
       } else Seq.empty
     }
 
