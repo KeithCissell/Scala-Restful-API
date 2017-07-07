@@ -1,4 +1,5 @@
 // src/main/scala/milestoneproject/MockRun.scala
+import httpclient.HttpClient._
 import lookitup.LookItUp
 import httpclient.LookItUpAPI._
 import searchengine.SearchEngine._
@@ -44,10 +45,10 @@ object LookItUpMockRun {
     val Lewis = new User("LewCustom", "K7L", SearchHistory(AB(weatherSearch, pieSearch, cardinalsSearch)))
     val Tommy = new User("TomCatBolls", "art4life", SearchHistory(AB(badSearch, weatherSearch, weatherSearch)))
     val Mark = new User("Mark", "riffraff", SearchHistory(AB(cardinalsSearch, weatherSearch, pieSearch)))
-    val allUsers = new UserGroup(AB(Keith, Connor, Curly, Moe, Larry, Tessa, Patrick, Lewis, Tommy, Mark))
+    val allUsers = Seq(Keith, Connor, Curly, Moe, Larry, Tessa, Patrick, Lewis, Tommy, Mark)
 
     // Create LookItUp SearchEngine
-    val LookItUp = new LookItUp(allUsers)
+    val lookItUp = new LookItUp(allUsers)
 
     // Mock HTTP Client
     class LIUAPI extends LookItUpAPI
@@ -68,19 +69,21 @@ object LookItUpMockRun {
     // println(s"The most frequent search on this engine: ${LookItUp.mostFrequentSearch}")
 
     // Make a search
-    //println(Curly)
-    //LookItUp.userSearch(Curly.name, "testing")
-    //println(Curly)
+    // println(Curly)
+    // lookItUp.userSearch(Curly.name, "testing")
+    // println(Curly)
 
-    // Make requests to the server
-    LIU.ping
+    // // Make requests to the server
+    // LIU.ping
     LIU.createUser("keith", "password")
     LIU.changePassword("keith", "password", "wordpass")
     LIU.search("keith", "wordpass", "Cardinals")
     LIU.getAllSearches
     LIU.getUserSearches("keith", "wordpass")
-    LIU.mostCommonSearch
-    LIU.userMostCommonSearch("keith", "wordpass")
+    LIU.mostFrequentSearch
+    LIU.userMostFrequentSearch("keith", "wordpass")
 
+    // Test mostFrequentSearch
+    //println(lookItUp.mostFrequentSearch)
   }
 }

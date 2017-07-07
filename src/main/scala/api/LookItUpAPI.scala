@@ -8,6 +8,7 @@ import org.json4s.jackson.JsonMethods._
 import scala.util.matching.Regex
 import scala.collection.mutable.{ArrayBuffer => AB}
 
+
 object LookItUpAPI {
 
   trait LookItUpAPI extends HttpClient {
@@ -45,14 +46,13 @@ object LookItUpAPI {
       // Handle response
       val message = resp.statusCode match {
         case 200  => s"Successfully changed password for: $username"
-        case 403  => s"SOMETHING WENT WRONG"
         case _    => s"ERROR. Status Code: ${resp.statusCode}"
       }
       println(message)
     }
 
     def search(username: String, password: String, query: String): Unit = {
-      val reqURL = hostRoot + "/search?q=:" + query
+      val reqURL = hostRoot + "/search?q=" + query
       val reqBody = Map("username" -> username, "password" -> password)
       val resp = executeHttpPost(reqURL, reqBody)
       // Handle response
@@ -88,7 +88,7 @@ object LookItUpAPI {
       println(message)
     }
 
-    def mostCommonSearch: Unit = {
+    def mostFrequentSearch: Unit = {
       val reqURL = hostRoot + "/most_common_search"
       val resp = executeHttpGet(reqURL)
       // Handle response
@@ -99,7 +99,7 @@ object LookItUpAPI {
       println(message)
     }
 
-    def userMostCommonSearch(username: String, password: String): Unit = {
+    def userMostFrequentSearch(username: String, password: String): Unit = {
       val reqURL = hostRoot + "/most_common_search"
       val reqBody = Map("username" -> username, "password" -> password)
       val resp = executeHttpPost(reqURL, reqBody)

@@ -1,15 +1,15 @@
 // src/main/scala/milestoneproject/SearchEngine.scala
 package searchengine
 
-import httpclient.DuckDuckGoClient._
 import scala.collection.mutable.{ArrayBuffer => AB}
+
 
 object SearchEngine {
 
   // A general list of methods to be used by a repository
   trait Repository[A, I] {
     def isEmpty: Boolean
-    def getAll: AB[A]
+    def getAll: Seq[A]
     def get(id: I): Option[A]
     def create(x: A): Unit
     def update(x: A): Unit
@@ -27,7 +27,7 @@ object SearchEngine {
       extends Repository[Search,Int] {
     def isEmpty: Boolean = history.isEmpty
     def contains(s: Search): Boolean = history.contains(s)
-    def getAll: AB[Search] = history
+    def getAll: Seq[Search] = history
     def get(id: Int): Option[Search] = {
       if (id >= 0 && id < history.length) Some(history(id)) else None
     }
@@ -41,15 +41,17 @@ object SearchEngine {
   }
 
   // A search engine user that holds name, password and search history
-  class User(val name: String, val password: String,
+  case class User(val name: String, var password: String,
       var searchHistory: SearchHistory = SearchHistory()) {
-    def mostFrequentSearch: String = {
-      if (!searchHistory.isEmpty) {
-        val frequencies = for (s <- searchHistory.getAll) yield {
-          s -> searchHistory.getAll.count(_ == s)
-        }
-        frequencies.maxBy(_._2)._1.value
-      } else "No Search History"
+    def mostFrequentSearch: Seq[String] = {
+      val searches = searchHistory.getAll
+      if (!searches.isEmpty) {
+        var results: AB[String] = AB.empty
+        val frequencies = searches.groupBy(_.value).mapValues(_.size)
+        val mostFrequent = frequencies.maxBy(_._2)
+        for ((s,f) <- frequencies) if (f == mostFrequent._2) results += s
+        return results.toSeq
+      } else Seq.empty
     }
     override def toString: String = {
       if (searchHistory.isEmpty) s"${name}'s Search History\nEmpty"
@@ -58,17 +60,21 @@ object SearchEngine {
   }
 
   // A group of search engine users
-  class UserGroup(private var users: Map[String,User] = Map.empty) extends Repository[User,String] {
-    // Allows UserGroup to be constructed with a ArrayBuffer of users
-    def this(users: AB[User]) {
+  class UserGroup(var users: Map[String,User] = Map.empty) extends Repository[User,String] {
+    // Allows UserGroup to be constructed with a Seq of users
+    def this(users: Seq[User]) {
       this((users.map(_.name) zip users).toMap)
     }
     def isEmpty: Boolean = users.isEmpty
     def contains(id: String): Boolean = users.contains(id)
-    def getAll: AB[User] = users.values.to[AB]
+    def contains(optionID: Option[String]): Boolean = optionID match {
+      case Some(id) => contains(id)
+      case None     => false
+    }
+    def getAll: Seq[User] = users.values.toSeq
     def get(id: String): Option[User] = if (users.contains(id)) Some(users(id)) else None
     def create(u: User): Unit = {
-      if (users.contains(u.name)) println(s"User already exists: $u.name")
+      if (users.contains(u.name)) println(s"User already exists: ${u.name}")
       else users = users + (u.name -> u)
     }
     def update(u: User): Unit = users = users + (u.name -> u)
@@ -76,19 +82,46 @@ object SearchEngine {
   }
 
   // A search engine that holds a UserGroup
-  class SearchEngine(val name: String, var userGroup: UserGroup = new UserGroup()) {
-    def engineSearchHistory: AB[Search] = {
-      (for (usr <- userGroup.getAll) yield usr.searchHistory.getAll).flatten
+  class SearchEngine(val name: String, users: Map[String,User] = Map.empty)
+      extends UserGroup(users) {
+    // Allows SearchEngine to be constructed with a Seq of users
+    def this(name: String, users: Seq[User]) {
+      this(name, (users.map(_.name) zip users).toMap)
     }
-    def mostFrequentSearch: String = {
-      val history = engineSearchHistory
-      if (!history.isEmpty) {
-        val frequencies = for (s <- history) yield {
-          s -> history.count(_ == s)
+
+    def engineSearchHistory: Seq[Search] = {
+      (for (usr <- getAll) yield usr.searchHistory.getAll).flatten
+    }
+
+    def mostFrequentSearch: Seq[String] = {
+      val searches = engineSearchHistory
+      if (!searches.isEmpty) {
+        var results: AB[String] = AB.empty
+        val frequencies = searches.groupBy(_.value).mapValues(_.size)
+        val mostFrequent = frequencies.maxBy(_._2)
+        for ((s,f) <- frequencies) if (f == mostFrequent._2) results += s
+        return results.toSeq
+      } else Seq.empty
+    }
+
+    def changePassword(username: String, newPassword: String): Unit = get(username) match {
+      case Some(user) => {
+        user.password = newPassword
+        update(user)
+      }
+      case None => println(s"Coundn't find: $username")
+    }
+
+    def validUser(username: Option[String], password: Option[String]): Boolean = {
+      (username, password) match {
+        case (Some(u),Some(p)) if contains(u) => get(u) match {
+          case Some(user) => user.password == p
+          case None       => false
         }
-        frequencies.maxBy(_._2)._1.value
-      } else "No Searches Found"
+        case _ => false
+      }
     }
+
   }
 
 }
