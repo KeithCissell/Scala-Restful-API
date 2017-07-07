@@ -1,6 +1,7 @@
 // src/test/scala/SearchEngineSpecs.scala
 import lookitup.LookItUp
 import httpclient.HttpClient._
+import httpclient.LookItUpAPI._
 import httpclient.DuckDuckGoAPI._
 import org.specs2.specification._
 import searchengine.SearchEngine._
@@ -48,12 +49,22 @@ object SearchEngineSpecs extends Specification {
   val testClient = new TestClient
 
   // Create SearchEngines
-  val unpopularSearchEngine = new SearchEngine("Unpopular Engine", new UserGroup(AB(Lewis, Connor)))
-  val smallSearchEngine = new SearchEngine("Small Engine", new UserGroup(AB(ConnorUpdate)))
-  val popularSearchEngine = new SearchEngine("Popular Engine", allUsers)
+  val unpopularSearchEngine = new SearchEngine("Unpopular Engine", Seq(Lewis, Connor))
+  val smallSearchEngine = new SearchEngine("Small Engine", Seq(ConnorUpdate))
+  val popularSearchEngine = new SearchEngine("Popular Engine", Seq(Keith, Patrick, Lewis, Connor))
 
   // Create LookItUp Engine
-  val LookItUp = new LookItUp(new UserGroup(AB(Lewis)))
+  val LookItUp = new LookItUp(Seq(Lewis))
+
+  // Create LookItUpAPI
+  class LIUAPI extends LookItUpAPI
+  val LIU = new LIUAPI
+
+  // Create vars to hold responses
+  val emptyResponse = HttpResponse(Map.empty, "", 1)
+  var createUserResponse = emptyResponse
+  var changePasswordResponse = emptyResponse
+  var userSearchResponse = emptyResponse
 
 
   /*******************************************************
@@ -93,8 +104,8 @@ object SearchEngineSpecs extends Specification {
   "\nUser holds an identity and searchHistory and" should {
 
     "Find the User's most frequent search" in {
-      (Lewis.mostFrequentSearch === "No Search History") &&
-      (Keith.mostFrequentSearch === "Cardinals")
+      (Lewis.mostFrequentSearch === Seq.empty) &&
+      (Keith.mostFrequentSearch === Seq("Cardinals"))
     }
     "Properly formats a string" in {
       (ConnorUpdate.toString == s"Conair's Search History\n${SearchHistory(AB(weatherSearch))}") &&
@@ -111,7 +122,7 @@ object SearchEngineSpecs extends Specification {
     "Check if group contains a User" in {
       allUsers.contains(Keith.name)
     }
-    "Return a ArrayBuffer of all User elements" in {
+    "Return an ArrayBuffer of all User elements" in {
       allUsers.getAll == AB(Keith, Patrick, Lewis, Connor)
     }
     "Get a User by their name" in {
@@ -138,8 +149,8 @@ object SearchEngineSpecs extends Specification {
       smallSearchEngine.engineSearchHistory == AB(weatherSearch)
     }
     "Find the SearchEngine's most frequent search" in {
-      (unpopularSearchEngine.mostFrequentSearch === "No Searches Found") &&
-      (popularSearchEngine.mostFrequentSearch === "Cardinals")
+      (unpopularSearchEngine.mostFrequentSearch === Seq.empty) &&
+      (popularSearchEngine.mostFrequentSearch === Seq("Cardinals"))
     }
   }
 
@@ -154,7 +165,7 @@ object SearchEngineSpecs extends Specification {
     }
   }
 
-  // Look It Up Tests
+  // LookItUp Tests
   "\nLookItUp extends searcha engine with a DuckDuckGo API and" should {
 
     step(LookItUp.userSearch(Lewis.name, "test"))
@@ -162,4 +173,37 @@ object SearchEngineSpecs extends Specification {
       !LookItUp.engineSearchHistory.isEmpty
     }
   }
+
+  // LookItUp Server Tests
+  "\nLookItUpAPI is a client-API that" should {
+
+    "Ping server" in {
+      LIU.ping.statusCode == 200
+    }
+    step(createUserResponse = LIU.createUser("keith", "password"))
+    "Create a new user" in {
+      createUserResponse.statusCode == 200
+    }
+    step(changePasswordResponse = LIU.changePassword("keith", "password", "wordpass"))
+    "Change a user's password" in {
+      changePasswordResponse.statusCode == 200
+    }
+    step(userSearchResponse = LIU.search("keith", "wordpass", "Cardinals"))
+    "Make a search for a user" in {
+      userSearchResponse.statusCode == 200
+    }
+    "Return all searches made on the engine" in {
+      LIU.getAllSearches.statusCode == 200
+    }
+    "Return all searches made by a given user" in {
+      LIU.getUserSearches("keith", "wordpass").statusCode == 200
+    }
+    "Return the most frequent search on the engine" in {
+      LIU.mostFrequentSearch.statusCode == 200
+    }
+    "Return the most frequent search made by a given user" in {
+      LIU.userMostFrequentSearch("keith", "wordpass").statusCode == 200
+    }
+  }
+
 }
