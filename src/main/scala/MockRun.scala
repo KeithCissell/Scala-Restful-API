@@ -1,4 +1,3 @@
-// src/main/scala/milestoneproject/MockRun.scala
 import httpclient.HttpClient._
 import lookitup.LookItUp
 import httpclient.LookItUpAPI._

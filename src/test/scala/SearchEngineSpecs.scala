@@ -1,17 +1,25 @@
 // src/test/scala/SearchEngineSpecs.scala
 import lookitup.LookItUp
-import httpclient.HttpClient._
+import searchengine.SearchEngine._
 import httpclient.LookItUpAPI._
 import httpclient.DuckDuckGoAPI._
+import searchengine.actors._
+
+import httpclient.HttpClient._
 import org.specs2.specification._
-import searchengine.SearchEngine._
 import org.specs2.mutable.Specification
+import akka.actor._
+import akka.testkit._
+
 import scala.collection.mutable.{ArrayBuffer => AB}
 
 object SearchEngineSpecs extends Specification {
   /*******************************************************
   ** Create data to test with
   *******************************************************/
+  // Create some Results
+  val testResult = Result("Springfield's Weather", "Local weather report for your area.")
+
   // Make some searches and fill them with results
   val weatherSearch = Search("Weather", AB(
     Result("Springfield's Weather", "Local weather report for your area."),
@@ -65,6 +73,9 @@ object SearchEngineSpecs extends Specification {
   var createUserResponse = emptyResponse
   var changePasswordResponse = emptyResponse
   var userSearchResponse = emptyResponse
+
+  // Akka Actors
+  implicit val system = ActorSystem()
 
 
   /*******************************************************
@@ -175,34 +186,56 @@ object SearchEngineSpecs extends Specification {
   }
 
   // LookItUp Server Tests
-  "\nLookItUpAPI is a client-API that" should {
+  // "\nLookItUpAPI is a client-API that" should {
+  //
+  //   "Ping server" in {
+  //     LIU.ping.statusCode == 200
+  //   }
+  //   step(createUserResponse = LIU.createUser("keith", "password"))
+  //   "Create a new user" in {
+  //     createUserResponse.statusCode == 200
+  //   }
+  //   step(changePasswordResponse = LIU.changePassword("keith", "password", "wordpass"))
+  //   "Change a user's password" in {
+  //     changePasswordResponse.statusCode == 200
+  //   }
+  //   step(userSearchResponse = LIU.search("keith", "wordpass", "Cardinals"))
+  //   "Make a search for a user" in {
+  //     userSearchResponse.statusCode == 200
+  //   }
+  //   "Return all searches made on the engine" in {
+  //     LIU.getAllSearches.statusCode == 200
+  //   }
+  //   "Return all searches made by a given user" in {
+  //     LIU.getUserSearches("keith", "wordpass").statusCode == 200
+  //   }
+  //   "Return the most frequent search on the engine" in {
+  //     LIU.mostFrequentSearch.statusCode == 200
+  //   }
+  //   "Return the most frequent search made by a given user" in {
+  //     LIU.userMostFrequentSearch("keith", "wordpass").statusCode == 200
+  //   }
+  // }
 
-    "Ping server" in {
-      LIU.ping.statusCode == 200
+  // Akka Actor Tests
+  "\nSearch Actor" should {
+    "Return list of search results" in {
+      val probe = TestProbe()
+      val searchActor = system.actorOf(SearchActor.props("Keith", "test"))
+
+      searchActor.tell(SearchActor.RequestResults, probe.ref)
+      val response = probe.expectMsgType[SearchActor.RespondResults]
+      response.results should ===(List.empty)
     }
-    step(createUserResponse = LIU.createUser("keith", "password"))
-    "Create a new user" in {
-      createUserResponse.statusCode == 200
-    }
-    step(changePasswordResponse = LIU.changePassword("keith", "password", "wordpass"))
-    "Change a user's password" in {
-      changePasswordResponse.statusCode == 200
-    }
-    step(userSearchResponse = LIU.search("keith", "wordpass", "Cardinals"))
-    "Make a search for a user" in {
-      userSearchResponse.statusCode == 200
-    }
-    "Return all searches made on the engine" in {
-      LIU.getAllSearches.statusCode == 200
-    }
-    "Return all searches made by a given user" in {
-      LIU.getUserSearches("keith", "wordpass").statusCode == 200
-    }
-    "Return the most frequent search on the engine" in {
-      LIU.mostFrequentSearch.statusCode == 200
-    }
-    "Return the most frequent search made by a given user" in {
-      LIU.userMostFrequentSearch("keith", "wordpass").statusCode == 200
+
+    "Record results" in {
+      val probe = TestProbe()
+      val searchActor = system.actorOf(SearchActor.props("Keith", "test"))
+
+      searchActor.tell(SearchActor.RecordResults(List(testResult)), probe.ref)
+      searchActor.tell(SearchActor.RequestResults, probe.ref)
+      val response = probe.expectMsgType[SearchActor.RespondResults]
+      response.results should ===(List(testResult))
     }
   }
 
