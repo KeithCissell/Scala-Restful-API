@@ -44,7 +44,7 @@ object LookItUpMockRun {
     val Lewis = new User("LewCustom", "K7L", SearchHistory(AB(weatherSearch, pieSearch, cardinalsSearch)))
     val Tommy = new User("TomCatBolls", "art4life", SearchHistory(AB(badSearch, weatherSearch, weatherSearch)))
     val Mark = new User("Mark", "riffraff", SearchHistory(AB(cardinalsSearch, weatherSearch, pieSearch)))
-    val allUsers = Seq(Keith, Connor, Curly, Moe, Larry, Tessa, Patrick, Lewis, Tommy, Mark)
+    val allUsers = List(Keith, Connor, Curly, Moe, Larry, Tessa, Patrick, Lewis, Tommy, Mark)
 
     // Create LookItUp SearchEngine
     val lookItUp = new LookItUp(allUsers)

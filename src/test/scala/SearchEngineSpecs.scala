@@ -43,7 +43,7 @@ object SearchEngineSpecs extends Specification {
   val ConnorUpdate = new User("Conair", "newWordPass", SearchHistory(AB(weatherSearch)))
 
   // Create UserGroups
-  val allUsers = new UserGroup(AB(Keith, Patrick, Lewis, Connor))
+  val allUsers = new UserGroup(List(Keith, Patrick, Lewis, Connor))
   val emptyGroup = new UserGroup()
 
   // Define Get/Post testing data
@@ -56,12 +56,12 @@ object SearchEngineSpecs extends Specification {
   val testClient = new TestClient
 
   // Create SearchEngines
-  val unpopularSearchEngine = new SearchEngine("Unpopular Engine", Seq(Lewis, Connor))
-  val smallSearchEngine = new SearchEngine("Small Engine", Seq(ConnorUpdate))
-  val popularSearchEngine = new SearchEngine("Popular Engine", Seq(Keith, Patrick, Lewis, Connor))
+  val unpopularSearchEngine = new SearchEngine("Unpopular Engine", List(Lewis, Connor))
+  val smallSearchEngine = new SearchEngine("Small Engine", List(ConnorUpdate))
+  val popularSearchEngine = new SearchEngine("Popular Engine", List(Keith, Patrick, Lewis, Connor))
 
   // Create LookItUp Engine
-  val LookItUp = new LookItUp(Seq(Lewis))
+  val LookItUp = new LookItUp(List(Lewis))
 
   // Create LookItUpAPI
   class LIUAPI extends LookItUpAPI
@@ -90,8 +90,8 @@ object SearchEngineSpecs extends Specification {
     "Check if history contains a Search" in {
       Keith.searchHistory.contains(cardinalsSearch)
     }
-    "Return a ArrayBuffer of all Search elements" in {
-      Keith.searchHistory.getAll == Seq(weatherSearch, cardinalsSearch, cardinalsSearch)
+    "Return a List of all Search elements" in {
+      Keith.searchHistory.getAll == List(weatherSearch, cardinalsSearch, cardinalsSearch)
     }
     "Get a Search at the indicated index" in {
       (Keith.searchHistory.get(2) == Some(cardinalsSearch)) && (Keith.searchHistory.get(4) == None)
@@ -114,8 +114,8 @@ object SearchEngineSpecs extends Specification {
   "\nUser holds an identity and searchHistory and" should {
 
     "Find the User's most frequent search" in {
-      (Lewis.mostFrequentSearch === Seq.empty) &&
-      (Keith.mostFrequentSearch === Seq("Cardinals"))
+      (Lewis.mostFrequentSearch === List.empty) &&
+      (Keith.mostFrequentSearch === List("Cardinals"))
     }
     "Properly formats a string" in {
       (ConnorUpdate.toString == s"Conair's Search History\n${SearchHistory(AB(weatherSearch))}") &&
@@ -132,8 +132,8 @@ object SearchEngineSpecs extends Specification {
     "Check if group contains a User" in {
       allUsers.contains(Keith.name)
     }
-    "Return an ArrayBuffer of all User elements" in {
-      allUsers.getAll == AB(Keith, Patrick, Lewis, Connor)
+    "Return a List of all Users" in {
+      allUsers.getAll == List(Keith, Patrick, Lewis, Connor)
     }
     "Get a User by their name" in {
       (allUsers.get("Keith") == Some(Keith)) && (emptyGroup.get("Keith") == None)
@@ -159,8 +159,8 @@ object SearchEngineSpecs extends Specification {
       smallSearchEngine.engineSearchHistory == AB(weatherSearch)
     }
     "Find the SearchEngine's most frequent search" in {
-      (unpopularSearchEngine.mostFrequentSearch === Seq.empty) &&
-      (popularSearchEngine.mostFrequentSearch === Seq("Cardinals"))
+      (unpopularSearchEngine.mostFrequentSearch === List.empty) &&
+      (popularSearchEngine.mostFrequentSearch === List("Cardinals"))
     }
   }
 

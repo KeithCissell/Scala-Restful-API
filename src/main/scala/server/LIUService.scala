@@ -23,10 +23,19 @@ object LIUService {
 
   implicit val system = ActorSystem()
 
+  class IdGenerator(var idCounter: Int = 0) {
+    def getNext: Int = {
+      idCounter += 1
+      return idCounter
+    }
+  }
+
   val LIU = new LookItUp
 
   val caller = system.actorOf(Caller.props())
   val liuActor = system.actorOf(LIUActor.props(LIU))
+
+  val idGenerator = new IdGenerator
 
   // This service plugs into the server to handle incoming requests
   val service = HttpService {
@@ -46,7 +55,9 @@ object LIUService {
     LIU.contains(username) match {
       case true   => Forbidden(data)
       case false  => {
-        liuActor.tell(LIUActor.CreateUser(username.get, password.get), caller)
+        val reqId = idGenerator.getNext
+        println(s"Request received: $reqId")
+        liuActor.tell(LIUActor.CreateUser(reqId, username.get, password.get), caller)
         Ok(data)
       }
     }
@@ -60,7 +71,9 @@ object LIUService {
       case false  => Forbidden(data)
       case true   => newPassword match {
         case Some(n) if n != oldPassword => {
-          liuActor.tell(LIUActor.ChangePassword(username.get, n), caller)
+          val reqId = idGenerator.getNext
+          println(s"Request received: $reqId")
+          liuActor.tell(LIUActor.ChangePassword(reqId, username.get, n), caller)
           Ok(data)
         }
         case _ => Forbidden(data)
@@ -75,7 +88,9 @@ object LIUService {
       case false  => Forbidden(data)
       case true   => {
         val searchResult = LIU.searchDDG(searchString)
-        liuActor.tell(LIUActor.AddSearchHistory(username.get, searchResult), caller)
+        val reqId = idGenerator.getNext
+        println(s"Request received: $reqId")
+        liuActor.tell(LIUActor.AddSearchHistory(reqId, username.get, searchResult), caller)
         Ok(encodeSearch(searchResult))
       }
     }
