@@ -4,22 +4,23 @@ package lookitup
 import httpclient.DuckDuckGoAPI._
 import searchengine.SearchEngine._
 
-class LookItUp(users: Map[String,User] = Map.empty)
+import scala.collection.mutable
+
+
+class LookItUp(users: mutable.Map[String,User] = mutable.Map.empty)
     extends SearchEngine("Look It Up", users) with DuckDuckGoAPI {
   // Allows LookItUp to be constructed with a Seq of users
   def this(users: Seq[User]) {
-    this((users.map(_.name) zip users).toMap)
+    this(mutable.Map(users.map(user => (user.name, user)): _*))
   }
 
   // Handle User Search Request
-  def userSearch(username: String, query: String): Option[Search] =
+  def addSearchHistory(username: String, searchResult: Search) =
     get(username) match {
       case None       => None
       case Some(user) => {
-        val searchResult = searchDDG(query)
         user.searchHistory.create(searchResult)
         update(user)
-        Some(searchResult)
       }
   }
 }

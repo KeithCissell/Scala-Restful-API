@@ -1,6 +1,7 @@
 // src/main/scala/milestoneproject/SearchEngine.scala
 package searchengine
 
+import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer => AB}
 
 
@@ -60,10 +61,10 @@ object SearchEngine {
   }
 
   // A group of search engine users
-  class UserGroup(var users: Map[String,User] = Map.empty) extends Repository[User,String] {
+  class UserGroup(var users: mutable.Map[String,User] = mutable.Map.empty) extends Repository[User,String] {
     // Allows UserGroup to be constructed with a Seq of users
     def this(users: Seq[User]) {
-      this((users.map(_.name) zip users).toMap)
+      this(mutable.Map(users.map(user => (user.name, user)): _*))
     }
     def isEmpty: Boolean = users.isEmpty
     def contains(id: String): Boolean = users.contains(id)
@@ -75,18 +76,18 @@ object SearchEngine {
     def get(id: String): Option[User] = if (users.contains(id)) Some(users(id)) else None
     def create(u: User): Unit = {
       if (users.contains(u.name)) println(s"User already exists: ${u.name}")
-      else users = users + (u.name -> u)
+      else users += (u.name -> u)
     }
-    def update(u: User): Unit = users = users + (u.name -> u)
-    def delete(u: User): Unit = if (users.contains(u.name)) users = users - u.name
+    def update(u: User): Unit = users += (u.name -> u)
+    def delete(u: User): Unit = if (users.contains(u.name)) users -= u.name
   }
 
   // A search engine that holds a UserGroup
-  class SearchEngine(val name: String, users: Map[String,User] = Map.empty)
+  class SearchEngine(val name: String, users: mutable.Map[String,User] = mutable.Map.empty)
       extends UserGroup(users) {
     // Allows SearchEngine to be constructed with a Seq of users
     def this(name: String, users: Seq[User]) {
-      this(name, (users.map(_.name) zip users).toMap)
+      this(name, mutable.Map(users.map(user => (user.name, user)): _*))
     }
 
     def engineSearchHistory: Seq[Search] = {
