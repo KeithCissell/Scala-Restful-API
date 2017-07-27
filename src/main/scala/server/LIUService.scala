@@ -1,25 +1,44 @@
 package lookitup.server
 
+import akka.actor._
 import io.circe._
 import org.http4s._
 import org.http4s.dsl._
 import org.http4s.circe._
 import org.http4s.server._
-import scalaz.concurrent.Task
-
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
+import scalaz.concurrent.Task
+import scala.collection.mutable.{ArrayBuffer => AB}
+
 
 import lookitup.LookItUp
 import httpclient.DuckDuckGoAPI._
+import searchengine._
 import searchengine.SearchEngine._
 import searchengine.SearchEngine.Search
+import jsonhandler.Handlers._
 
 
 object LIUService {
 
+  implicit val system = ActorSystem()
+
+  class IdGenerator(var idCounter: Int = 0) {
+    def getNext: Int = {
+      idCounter += 1
+      return idCounter
+    }
+  }
+
+  val idGenerator = new IdGenerator
   val LIU = new LookItUp
+  var completedRequests: AB[Int] = AB.empty
+
+  val caller = system.actorOf(Caller.props())
+  val liuActor = system.actorOf(LIUActor.props(LIU, completedRequests))
+
 
   // This service plugs into the server to handle incoming requests
   val service = HttpService {
@@ -33,47 +52,19 @@ object LIUService {
     case req @ POST -> Root / "most_common_search"      => userMostFrequentSearch(req)
   }
 
-  // Retreives a field from io.circe.Json data
-  def extractField(field: String, data: Json): Option[String] = {
-    val cursor: HCursor = data.hcursor
-    cursor.downField(field).as[String] match {
-      case Left(_)  => None
-      case Right(s) => Some(s)
-    }
-  }
-
-  // `encode()` methods take in a class and convert them to Json
-  def encode(search: Search): String = {
-    val json =
-      ("results" -> search.results.map { r =>
-        ( ("name"         -> r.title) ~
-          ("description"  -> r.description) )
-      })
-    return compact(render(json))
-  }
-  def encodeSearches(searches: Seq[Search]): String = {
-    val json =
-      ("searches" -> searches.map { s =>
-        "term" -> s.value
-      })
-    return compact(render(json))
-  }
-  def encodeTerms(searchTerms: Seq[String]): String = {
-    val json =
-      ("Most Frequent Searches" -> searchTerms.map { t =>
-        "term" -> t
-      })
-    return compact(render(json))
-  }
-
   def createUser(req: Request): Task[Response] = req.decode[Json]{ data =>
     val username = extractField("username", data)
     val password = extractField("password", data)
     LIU.contains(username) match {
-      case true   =>Forbidden(data)
+      case true   => Forbidden(data)
       case false  => {
-        LIU.create(new User(username.get, password.get))
-        Ok(data)
+        val reqId = idGenerator.getNext
+        println(s"Request received: $reqId")
+        liuActor.tell(LIUActor.CreateUser(reqId, username.get, password.get), caller)
+        awaitCompletion(reqId) match {
+          case true   => Ok(data)
+          case false  => ExpectationFailed(data)
+        }
       }
     }
   }
@@ -85,11 +76,16 @@ object LIUService {
     LIU.validUser(username, oldPassword) match {
       case false  => Forbidden(data)
       case true   => newPassword match {
+        case None   => Forbidden(data)
         case Some(n) if n != oldPassword => {
-          LIU.changePassword(username.get, n)
-          Ok(data)
+          val reqId = idGenerator.getNext
+          println(s"Request received: $reqId")
+          liuActor.tell(LIUActor.ChangePassword(reqId, username.get, n), caller)
+          awaitCompletion(reqId) match {
+            case true   => Ok(data)
+            case false  => ExpectationFailed(data)
+          }
         }
-        case _ => Forbidden(data)
       }
     }
   }
@@ -99,9 +95,15 @@ object LIUService {
     val password = extractField("password", data)
     LIU.validUser(username, password) match {
       case false  => Forbidden(data)
-      case true   => LIU.userSearch(username.get, searchString) match {
-        case Some(searchResult) => Ok(encode(searchResult))
-        case None               => Forbidden(data)
+      case true   => {
+        val searchResult = LIU.searchDDG(searchString)
+        val reqId = idGenerator.getNext
+        println(s"Request received: $reqId")
+        liuActor.tell(LIUActor.AddSearchHistory(reqId, username.get, searchResult), caller)
+        awaitCompletion(reqId) match {
+          case true   => Ok(encodeSearch(searchResult))
+          case false  => ExpectationFailed(data)
+        }
       }
     }
   }
@@ -122,6 +124,16 @@ object LIUService {
       case false  => Forbidden(data)
       case true   => Ok(encodeTerms(LIU.users(username.get).mostFrequentSearch))
     }
+  }
+
+  // Repeatedly attemps to find reqId in the completedRequests list
+  // Times out and returns false after 1 minute
+  def awaitCompletion(reqId: Int): Boolean = {
+    for (i <- 0 until 600) {
+      if (completedRequests.contains(reqId)) return true
+      else Thread.sleep(100)
+    }
+    return false
   }
 
 }

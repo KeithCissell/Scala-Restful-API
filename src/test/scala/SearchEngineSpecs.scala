@@ -1,17 +1,25 @@
-// src/test/scala/SearchEngineSpecs.scala
 import lookitup.LookItUp
-import httpclient.HttpClient._
+import searchengine._
+import searchengine.LIUActor._
+import searchengine.SearchEngine._
 import httpclient.LookItUpAPI._
 import httpclient.DuckDuckGoAPI._
+
+import httpclient.HttpClient._
 import org.specs2.specification._
-import searchengine.SearchEngine._
 import org.specs2.mutable.Specification
+import akka.actor._
+import akka.testkit._
+
 import scala.collection.mutable.{ArrayBuffer => AB}
 
 object SearchEngineSpecs extends Specification {
   /*******************************************************
   ** Create data to test with
   *******************************************************/
+  // Create some Results
+  val testResult = Result("Springfield's Weather", "Local weather report for your area.")
+
   // Make some searches and fill them with results
   val weatherSearch = Search("Weather", AB(
     Result("Springfield's Weather", "Local weather report for your area."),
@@ -36,7 +44,7 @@ object SearchEngineSpecs extends Specification {
   val ConnorUpdate = new User("Conair", "newWordPass", SearchHistory(AB(weatherSearch)))
 
   // Create UserGroups
-  val allUsers = new UserGroup(AB(Keith, Patrick, Lewis, Connor))
+  val allUsers = new UserGroup(List(Keith, Patrick, Lewis, Connor))
   val emptyGroup = new UserGroup()
 
   // Define Get/Post testing data
@@ -49,12 +57,12 @@ object SearchEngineSpecs extends Specification {
   val testClient = new TestClient
 
   // Create SearchEngines
-  val unpopularSearchEngine = new SearchEngine("Unpopular Engine", Seq(Lewis, Connor))
-  val smallSearchEngine = new SearchEngine("Small Engine", Seq(ConnorUpdate))
-  val popularSearchEngine = new SearchEngine("Popular Engine", Seq(Keith, Patrick, Lewis, Connor))
+  val unpopularSearchEngine = new SearchEngine("Unpopular Engine", List(Lewis, Connor))
+  val smallSearchEngine = new SearchEngine("Small Engine", List(ConnorUpdate))
+  val popularSearchEngine = new SearchEngine("Popular Engine", List(Keith, Patrick, Lewis, Connor))
 
   // Create LookItUp Engine
-  val LookItUp = new LookItUp(Seq(Lewis))
+  val LookItUp = new LookItUp(List(Lewis))
 
   // Create LookItUpAPI
   class LIUAPI extends LookItUpAPI
@@ -80,8 +88,8 @@ object SearchEngineSpecs extends Specification {
     "Check if history contains a Search" in {
       Keith.searchHistory.contains(cardinalsSearch)
     }
-    "Return a ArrayBuffer of all Search elements" in {
-      Keith.searchHistory.getAll == AB(weatherSearch, cardinalsSearch, cardinalsSearch)
+    "Return a List of all Search elements" in {
+      Keith.searchHistory.getAll == List(weatherSearch, cardinalsSearch, cardinalsSearch)
     }
     "Get a Search at the indicated index" in {
       (Keith.searchHistory.get(2) == Some(cardinalsSearch)) && (Keith.searchHistory.get(4) == None)
@@ -104,8 +112,8 @@ object SearchEngineSpecs extends Specification {
   "\nUser holds an identity and searchHistory and" should {
 
     "Find the User's most frequent search" in {
-      (Lewis.mostFrequentSearch === Seq.empty) &&
-      (Keith.mostFrequentSearch === Seq("Cardinals"))
+      (Lewis.mostFrequentSearch === List.empty) &&
+      (Keith.mostFrequentSearch === List("Cardinals"))
     }
     "Properly formats a string" in {
       (ConnorUpdate.toString == s"Conair's Search History\n${SearchHistory(AB(weatherSearch))}") &&
@@ -122,8 +130,10 @@ object SearchEngineSpecs extends Specification {
     "Check if group contains a User" in {
       allUsers.contains(Keith.name)
     }
-    "Return an ArrayBuffer of all User elements" in {
-      allUsers.getAll == AB(Keith, Patrick, Lewis, Connor)
+    step(println(allUsers.getAll))
+    step(println(List(Keith, Patrick, Lewis, Connor)))
+    "Return a List of all Users" in {
+      allUsers.getAll == List(Keith, Patrick, Lewis, Connor)
     }
     "Get a User by their name" in {
       (allUsers.get("Keith") == Some(Keith)) && (emptyGroup.get("Keith") == None)
@@ -149,8 +159,8 @@ object SearchEngineSpecs extends Specification {
       smallSearchEngine.engineSearchHistory == AB(weatherSearch)
     }
     "Find the SearchEngine's most frequent search" in {
-      (unpopularSearchEngine.mostFrequentSearch === Seq.empty) &&
-      (popularSearchEngine.mostFrequentSearch === Seq("Cardinals"))
+      (unpopularSearchEngine.mostFrequentSearch === List.empty) &&
+      (popularSearchEngine.mostFrequentSearch === List("Cardinals"))
     }
   }
 
@@ -166,11 +176,42 @@ object SearchEngineSpecs extends Specification {
   }
 
   // LookItUp Tests
-  "\nLookItUp extends searcha engine with a DuckDuckGo API and" should {
+  "\nLookItUp SearchEngine" should {
 
-    step(LookItUp.userSearch(Lewis.name, "test"))
-    "userSearch makes a search on DDG and adds it to the user's history" in {
+    step(LookItUp.addSearchHistory(Lewis.name, testSearch))
+    "Add a search to user's history" in {
       !LookItUp.engineSearchHistory.isEmpty
+    }
+  }
+
+  // Akka Actor Tests
+  "\nLookItUp Actor" should {
+
+    implicit val system = ActorSystem()
+    val probe = TestProbe()
+    val liuEngine = new LookItUp
+    val completedRequests: AB[Int] = AB.empty
+    val liuActor = system.actorOf(LIUActor.props(liuEngine, completedRequests))
+
+    "Create a new User" in {
+      liuActor.tell(LIUActor.CreateUser(1, "TestProbe", "password"), probe.ref)
+      val response = probe.expectMsgType[Completed]
+      (liuEngine.contains("TestProbe") == true) &&
+      (completedRequests.contains(1) == true)
+    }
+
+    "Changes User's password" in {
+      liuActor.tell(LIUActor.ChangePassword(2, "TestProbe", "newPassword"), probe.ref)
+      val response = probe.expectMsgType[Completed]
+      (liuEngine.users("TestProbe").password == "newPassword") &&
+      (completedRequests.contains(2) == true)
+    }
+
+    "Add search to User's history" in {
+      liuActor.tell(LIUActor.AddSearchHistory(3, "TestProbe", testSearch), probe.ref)
+      val response = probe.expectMsgType[Completed]
+      (liuEngine.users("TestProbe").searchHistory.contains(testSearch) == true) &&
+      (completedRequests.contains(3) == true)
     }
   }
 
