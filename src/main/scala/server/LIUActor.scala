@@ -14,36 +14,41 @@ object LIUActor {
 
   implicit val system = ActorSystem()
 
-  def props(searchEngine: LookItUp): Props = Props(new LIUActor(searchEngine))
+  def props(searchEngine: LookItUp, completedRequests: AB[Int]): Props = Props(new LIUActor(searchEngine, completedRequests))
 
   final case class CreateUser(reqId: Int, username: String, password: String)
   final case class ChangePassword(reqId: Int, username: String, password: String)
   final case class AddSearchHistory(reqId: Int, username: String, searchResult: Search)
+
+  final case class Completed(reqId: Int)
 }
 
 
-class LIUActor(LIU: LookItUp) extends Actor {
+class LIUActor(LIU: LookItUp, completedRequests: AB[Int]) extends Actor {
   import LIUActor._
-
-  var completedRequests: AB[Int] = AB.empty
 
   override def receive: Receive = {
 
     case CreateUser(reqId, username, password) =>
       LIU.create(new User(username, password))
       completedRequests += reqId
+      sender() ! Completed(reqId)
 
     case ChangePassword(reqId, username, password) =>
       LIU.changePassword(username, password)
       completedRequests += reqId
+      sender() ! Completed(reqId)
 
     case AddSearchHistory(reqId, username, searchResult) =>
       LIU.addSearchHistory(username, searchResult)
       completedRequests += reqId
-
+      sender() ! Completed(reqId)
   }
+  
 }
 
+
+// Empty Actor that is used to call LIUActor
 object Caller {
   def props(): Props = Props(new Caller)
 }

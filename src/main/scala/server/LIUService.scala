@@ -1,15 +1,17 @@
 package lookitup.server
 
+import akka.actor._
 import io.circe._
 import org.http4s._
 import org.http4s.dsl._
 import org.http4s.circe._
 import org.http4s.server._
-import scalaz.concurrent.Task
-import akka.actor._
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
+import scalaz.concurrent.Task
+import scala.collection.mutable.{ArrayBuffer => AB}
+
 
 import lookitup.LookItUp
 import httpclient.DuckDuckGoAPI._
@@ -30,12 +32,13 @@ object LIUService {
     }
   }
 
+  val idGenerator = new IdGenerator
   val LIU = new LookItUp
+  var completedRequests: AB[Int] = AB.empty
 
   val caller = system.actorOf(Caller.props())
-  val liuActor = system.actorOf(LIUActor.props(LIU))
+  val liuActor = system.actorOf(LIUActor.props(LIU, completedRequests))
 
-  val idGenerator = new IdGenerator
 
   // This service plugs into the server to handle incoming requests
   val service = HttpService {
@@ -58,7 +61,10 @@ object LIUService {
         val reqId = idGenerator.getNext
         println(s"Request received: $reqId")
         liuActor.tell(LIUActor.CreateUser(reqId, username.get, password.get), caller)
-        Ok(data)
+        awaitCompletion(reqId) match {
+          case true   => Ok(data)
+          case false  => ExpectationFailed(data)
+        }
       }
     }
   }
@@ -70,13 +76,16 @@ object LIUService {
     LIU.validUser(username, oldPassword) match {
       case false  => Forbidden(data)
       case true   => newPassword match {
+        case None   => Forbidden(data)
         case Some(n) if n != oldPassword => {
           val reqId = idGenerator.getNext
           println(s"Request received: $reqId")
           liuActor.tell(LIUActor.ChangePassword(reqId, username.get, n), caller)
-          Ok(data)
+          awaitCompletion(reqId) match {
+            case true   => Ok(data)
+            case false  => ExpectationFailed(data)
+          }
         }
-        case _ => Forbidden(data)
       }
     }
   }
@@ -91,7 +100,10 @@ object LIUService {
         val reqId = idGenerator.getNext
         println(s"Request received: $reqId")
         liuActor.tell(LIUActor.AddSearchHistory(reqId, username.get, searchResult), caller)
-        Ok(encodeSearch(searchResult))
+        awaitCompletion(reqId) match {
+          case true   => Ok(encodeSearch(searchResult))
+          case false  => ExpectationFailed(data)
+        }
       }
     }
   }
@@ -112,6 +124,16 @@ object LIUService {
       case false  => Forbidden(data)
       case true   => Ok(encodeTerms(LIU.users(username.get).mostFrequentSearch))
     }
+  }
+
+  // Repeatedly attemps to find reqId in the completedRequests list
+  // Times out and returns false after 1 minute
+  def awaitCompletion(reqId: Int): Boolean = {
+    for (i <- 0 until 600) {
+      if (completedRequests.contains(reqId)) return true
+      else Thread.sleep(100)
+    }
+    return false
   }
 
 }

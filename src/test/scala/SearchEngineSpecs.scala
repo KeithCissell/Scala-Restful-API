@@ -1,5 +1,6 @@
-// src/test/scala/SearchEngineSpecs.scala
 import lookitup.LookItUp
+import searchengine._
+import searchengine.LIUActor._
 import searchengine.SearchEngine._
 import httpclient.LookItUpAPI._
 import httpclient.DuckDuckGoAPI._
@@ -73,9 +74,6 @@ object SearchEngineSpecs extends Specification {
   var changePasswordResponse = emptyResponse
   var userSearchResponse = emptyResponse
 
-  // Akka Actors
-  implicit val system = ActorSystem()
-
 
   /*******************************************************
   ** Specs2 Tests
@@ -132,6 +130,8 @@ object SearchEngineSpecs extends Specification {
     "Check if group contains a User" in {
       allUsers.contains(Keith.name)
     }
+    step(println(allUsers.getAll))
+    step(println(List(Keith, Patrick, Lewis, Connor)))
     "Return a List of all Users" in {
       allUsers.getAll == List(Keith, Patrick, Lewis, Connor)
     }
@@ -184,6 +184,37 @@ object SearchEngineSpecs extends Specification {
     }
   }
 
+  // Akka Actor Tests
+  "\nLookItUp Actor" should {
+
+    implicit val system = ActorSystem()
+    val probe = TestProbe()
+    val liuEngine = new LookItUp
+    val completedRequests: AB[Int] = AB.empty
+    val liuActor = system.actorOf(LIUActor.props(liuEngine, completedRequests))
+
+    "Create a new User" in {
+      liuActor.tell(LIUActor.CreateUser(1, "TestProbe", "password"), probe.ref)
+      val response = probe.expectMsgType[Completed]
+      (liuEngine.contains("TestProbe") == true) &&
+      (completedRequests.contains(1) == true)
+    }
+
+    "Changes User's password" in {
+      liuActor.tell(LIUActor.ChangePassword(2, "TestProbe", "newPassword"), probe.ref)
+      val response = probe.expectMsgType[Completed]
+      (liuEngine.users("TestProbe").password == "newPassword") &&
+      (completedRequests.contains(2) == true)
+    }
+
+    "Add search to User's history" in {
+      liuActor.tell(LIUActor.AddSearchHistory(3, "TestProbe", testSearch), probe.ref)
+      val response = probe.expectMsgType[Completed]
+      (liuEngine.users("TestProbe").searchHistory.contains(testSearch) == true) &&
+      (completedRequests.contains(3) == true)
+    }
+  }
+
   // LookItUp Server Tests
   "\nLookItUpAPI is a client-API that" should {
 
@@ -214,29 +245,6 @@ object SearchEngineSpecs extends Specification {
     "Return the most frequent search made by a given user" in {
       LIU.userMostFrequentSearch("keith", "wordpass").statusCode == 200
     }
-  }
-
-  // Akka Actor Tests
-  "\nLookItUp Actor" should {
-    true
-    // "Return list of search results" in {
-    //   val probe = TestProbe()
-    //   val liuActor = system.actorOf(LIUActor.props( new LookItUp ))
-    //
-    //   liu.tell(SearchActor.RequestResults, probe.ref)
-    //   val response = probe.expectMsgType[SearchActor.RespondResults]
-    //   response.results should ===(List.empty)
-    // }
-    //
-    // "Record results" in {
-    //   val probe = TestProbe()
-    //   val searchActor = system.actorOf(SearchActor.props("Keith", "test"))
-    //
-    //   searchActor.tell(SearchActor.RecordResults(List(testResult)), probe.ref)
-    //   searchActor.tell(SearchActor.RequestResults, probe.ref)
-    //   val response = probe.expectMsgType[SearchActor.RespondResults]
-    //   response.results should ===(List(testResult))
-    // }
   }
 
 }
