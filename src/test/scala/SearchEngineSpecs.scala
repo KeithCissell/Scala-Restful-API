@@ -130,8 +130,8 @@ object SearchEngineSpecs extends Specification {
     "Check if group contains a User" in {
       allUsers.contains(Keith.name)
     }
-    step(println(allUsers.getAll))
-    step(println(List(Keith, Patrick, Lewis, Connor)))
+    // step(println(allUsers.getAll))
+    // step(println(List(Keith, Patrick, Lewis, Connor)))
     "Return a List of all Users" in {
       allUsers.getAll == List(Keith, Patrick, Lewis, Connor)
     }
@@ -190,29 +190,24 @@ object SearchEngineSpecs extends Specification {
     implicit val system = ActorSystem()
     val probe = TestProbe()
     val liuEngine = new LookItUp
-    val completedRequests: AB[Int] = AB.empty
-    val liuActor = system.actorOf(LIUActor.props(liuEngine, completedRequests))
+    val liuActor = system.actorOf(LIUActor.props(liuEngine))
 
     "Create a new User" in {
-      liuActor.tell(LIUActor.CreateUser(1, "TestProbe", "password"), probe.ref)
-      val response = probe.expectMsgType[Completed]
-      (liuEngine.contains("TestProbe") == true) &&
-      (completedRequests.contains(1) == true)
+      liuActor.tell(LIUActor.CreateUser("TestProbe", "password"), probe.ref)
+      val response = probe.expectMsgType[ActorSuccess]
+      (liuEngine.contains("TestProbe") == true)
     }
 
     "Changes User's password" in {
-      liuActor.tell(LIUActor.ChangePassword(2, "TestProbe", "newPassword"), probe.ref)
-      val response = probe.expectMsgType[Completed]
-      (liuEngine.users("TestProbe").password == "newPassword") &&
-      (completedRequests.contains(2) == true)
+      liuActor.tell(LIUActor.ChangePassword("TestProbe", "newPassword"), probe.ref)
+      val response = probe.expectMsgType[ActorSuccess]
+      (liuEngine.users("TestProbe").password == "newPassword")
     }
 
     "Add search to User's history" in {
-      liuActor.tell(LIUActor.AddSearchHistory(3, "TestProbe", testSearch), probe.ref)
-      val response = probe.expectMsgType[Completed]
-      (liuEngine.users("TestProbe").searchHistory.contains(testSearch) == true) &&
-      (completedRequests.contains(3) == true)
-    }
+      liuActor.tell(LIUActor.AddSearchHistory("TestProbe", testSearch), probe.ref)
+      val response = probe.expectMsgType[ActorSuccess]
+      (liuEngine.users("TestProbe").searchHistory.contains(testSearch) == true)    }
   }
 
   // LookItUp Server Tests
