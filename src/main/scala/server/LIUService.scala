@@ -1,43 +1,40 @@
 package lookitup.server
 
 import akka.actor._
+import akka.pattern.ask
+import akka.util.Timeout
+
 import io.circe._
 import org.http4s._
 import org.http4s.dsl._
 import org.http4s.circe._
 import org.http4s.server._
+
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
+
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scalaz.concurrent.Task
+import scala.concurrent.duration._
 import scala.collection.mutable.{ArrayBuffer => AB}
 
-
 import lookitup.LookItUp
-import httpclient.DuckDuckGoAPI._
 import searchengine._
+import searchengine.LIUActor._
 import searchengine.SearchEngine._
 import searchengine.SearchEngine.Search
+import httpclient.DuckDuckGoAPI._
 import jsonhandler.Handlers._
 
 
 object LIUService {
 
-  implicit val system = ActorSystem()
-
-  class IdGenerator(var idCounter: Int = 0) {
-    def getNext: Int = {
-      idCounter += 1
-      return idCounter
-    }
-  }
-
-  val idGenerator = new IdGenerator
+  implicit val system = ActorSystem("LookItUp")
+  implicit val timeout = Timeout(5 seconds)
   val LIU = new LookItUp
-  var completedRequests: AB[Int] = AB.empty
-
-  val caller = system.actorOf(Caller.props())
-  val liuActor = system.actorOf(LIUActor.props(LIU, completedRequests))
+  val liuActor = system.actorOf(LIUActor.props(LIU))
 
 
   // This service plugs into the server to handle incoming requests
@@ -58,12 +55,11 @@ object LIUService {
     LIU.contains(username) match {
       case true   => Forbidden(data)
       case false  => {
-        val reqId = idGenerator.getNext
-        println(s"Request received: $reqId")
-        liuActor.tell(LIUActor.CreateUser(reqId, username.get, password.get), caller)
-        awaitCompletion(reqId) match {
-          case true   => Ok(data)
-          case false  => ExpectationFailed(data)
+        val future: Future[ActorResponse] = ask(liuActor, CreateUser(username.get, password.get)).mapTo[ActorResponse]
+        val result = Await.result(future, 5 seconds)
+        result match {
+          case ActorSuccess(message)  => Ok(message)
+          case ActorFailure(error)    => ExpectationFailed(s"Could not create user (username.get):\n$error")
         }
       }
     }
@@ -78,12 +74,11 @@ object LIUService {
       case true   => newPassword match {
         case None   => Forbidden(data)
         case Some(n) if n != oldPassword => {
-          val reqId = idGenerator.getNext
-          println(s"Request received: $reqId")
-          liuActor.tell(LIUActor.ChangePassword(reqId, username.get, n), caller)
-          awaitCompletion(reqId) match {
-            case true   => Ok(data)
-            case false  => ExpectationFailed(data)
+          val future: Future[ActorResponse] = ask(liuActor, ChangePassword(username.get, newPassword.get)).mapTo[ActorResponse]
+          val result = Await.result(future, 5 seconds)
+          result match {
+            case ActorSuccess(message)  => Ok(message)
+            case ActorFailure(error)    => ExpectationFailed(s"Could not change password for (username.get):\n$error")
           }
         }
       }
@@ -97,12 +92,11 @@ object LIUService {
       case false  => Forbidden(data)
       case true   => {
         val searchResult = LIU.searchDDG(searchString)
-        val reqId = idGenerator.getNext
-        println(s"Request received: $reqId")
-        liuActor.tell(LIUActor.AddSearchHistory(reqId, username.get, searchResult), caller)
-        awaitCompletion(reqId) match {
-          case true   => Ok(encodeSearch(searchResult))
-          case false  => ExpectationFailed(data)
+        val future: Future[ActorResponse] = ask(liuActor, AddSearchHistory(username.get, searchResult)).mapTo[ActorResponse]
+        val result = Await.result(future, 5 seconds)
+        result match {
+          case ActorSuccess(message)  => Ok(message)
+          case ActorFailure(error)    => ExpectationFailed(s"Could not create user (username.get):\n$error")
         }
       }
     }
@@ -124,16 +118,6 @@ object LIUService {
       case false  => Forbidden(data)
       case true   => Ok(encodeTerms(LIU.users(username.get).mostFrequentSearch))
     }
-  }
-
-  // Repeatedly attemps to find reqId in the completedRequests list
-  // Times out and returns false after 1 minute
-  def awaitCompletion(reqId: Int): Boolean = {
-    for (i <- 0 until 600) {
-      if (completedRequests.contains(reqId)) return true
-      else Thread.sleep(100)
-    }
-    return false
   }
 
 }
