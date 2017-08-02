@@ -60,7 +60,7 @@ object LookItUpAPI {
       val resp = executeHttpPost(reqURL, reqBody)
       // Handle response
       val message = resp.statusCode match {
-        case 200  => s"${resp.body}"
+        case 200  => s"[$username] Search Created"
         case 403  => s"Invalid username/password combo"
         case _    => s"ERROR. Status Code: ${resp.statusCode}"
       }

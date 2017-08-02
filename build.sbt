@@ -6,8 +6,6 @@ scalaVersion := "2.12.2"
 val Http4sVersion = "0.15.11a"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-actor" % "2.5.3",
-  "com.typesafe.akka" %% "akka-testkit" % "2.5.3" % "test",
   "org.asynchttpclient" % "async-http-client" % "2.0.33",
   "org.http4s" %% "http4s-blaze-client" % Http4sVersion,
   "org.http4s" %% "http4s-blaze-server" % Http4sVersion,
