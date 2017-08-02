@@ -1,6 +1,7 @@
 // src/main/scala/milestoneproject/SearchEngine.scala
 package searchengine
 
+import scalaz.concurrent.Task
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer => AB}
 
@@ -44,14 +45,14 @@ object SearchEngine {
   // A search engine user that holds name, password and search history
   case class User(val name: String, var password: String,
       var searchHistory: SearchHistory = SearchHistory()) {
-    def mostFrequentSearch: List[String] = {
+    def mostFrequentSearch: Task[List[String]] = Task {
       val searches = searchHistory.getAll
       if (!searches.isEmpty) {
         var results: AB[String] = AB.empty
         val frequencies = searches.groupBy(_.value).mapValues(_.size)
         val mostFrequent = frequencies.maxBy(_._2)
         for ((s,f) <- frequencies) if (f == mostFrequent._2) results += s
-        return results.toList
+        results.toList
       } else List.empty
     }
     override def toString: String = {
@@ -75,7 +76,7 @@ object SearchEngine {
     def getAll: List[User] = users.values.toList
     def get(id: String): Option[User] = if (users.contains(id)) Some(users(id)) else None
     def create(u: User): Unit = {
-      if (users.contains(u.name)) println(s"User already exists: ${u.name}")
+      if (users.contains(u.name)) throw new Exception(s"User already exists: ${u.name}")
       else users += (u.name -> u)
     }
     def update(u: User): Unit = users += (u.name -> u)
@@ -90,32 +91,42 @@ object SearchEngine {
       this(name, mutable.Map(users.map(user => (user.name, user)): _*))
     }
 
-    def engineSearchHistory: List[Search] = {
+    def engineSearchHistory: Task[List[Search]] = Task {
       (for (usr <- getAll) yield usr.searchHistory.getAll).flatten
     }
 
-    def mostFrequentSearch: List[String] = {
-      val searches = engineSearchHistory
+    def userSearchHistory(username: String): Task[List[Search]] = Task {
+      users(username).searchHistory.getAll
+    }
+
+    def mostFrequentSearch: Task[List[String]] = Task {
+      val searches = engineSearchHistory.run
       if (!searches.isEmpty) {
         var results: AB[String] = AB.empty
         val frequencies = searches.groupBy(_.value).mapValues(_.size)
         val mostFrequent = frequencies.maxBy(_._2)
         for ((s,f) <- frequencies) if (f == mostFrequent._2) results += s
-        return results.toList
+        results.toList
       } else List.empty
     }
 
-    def changePassword(username: String, newPassword: String): Unit = get(username) match {
-      case Some(user) => {
-        user.password = newPassword
-        update(user)
-      }
-      case None => println(s"Coundn't find: $username")
+    def userMostFrequentSearch(username: String): Task[List[String]] = {
+      users(username).mostFrequentSearch
     }
 
-    def validUser(username: Option[String], password: Option[String]): Boolean = {
+    def createUser(username: String, password: String): Task[String] = Task {
+      create(new User(username, password))
+      s"[$username] user created."
+    }
+
+    def changePassword(username: String, newPassword: String): Task[String] = Task {
+      users(username).password = newPassword
+      s"[$username] password changed."
+    }
+
+    def validUser(username: Option[String], password: Option[String]): Task[Boolean] = Task {
       (username, password) match {
-        case (Some(u),Some(p)) if contains(u) => get(u) match {
+        case (Some(u),Some(p)) => get(u) match {
           case Some(user) => user.password == p
           case None       => false
         }

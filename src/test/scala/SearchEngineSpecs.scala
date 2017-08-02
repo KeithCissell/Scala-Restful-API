@@ -1,6 +1,5 @@
 import lookitup.LookItUp
 import searchengine._
-import searchengine.LIUActor._
 import searchengine.SearchEngine._
 import httpclient.LookItUpAPI._
 import httpclient.DuckDuckGoAPI._
@@ -8,8 +7,6 @@ import httpclient.DuckDuckGoAPI._
 import httpclient.HttpClient._
 import org.specs2.specification._
 import org.specs2.mutable.Specification
-import akka.actor._
-import akka.testkit._
 
 import scala.collection.mutable.{ArrayBuffer => AB}
 
@@ -112,8 +109,8 @@ object SearchEngineSpecs extends Specification {
   "\nUser holds an identity and searchHistory and" should {
 
     "Find the User's most frequent search" in {
-      (Lewis.mostFrequentSearch === List.empty) &&
-      (Keith.mostFrequentSearch === List("Cardinals"))
+      (Lewis.mostFrequentSearch.run === List.empty) &&
+      (Keith.mostFrequentSearch.run === List("Cardinals"))
     }
     "Properly formats a string" in {
       (ConnorUpdate.toString == s"Conair's Search History\n${SearchHistory(AB(weatherSearch))}") &&
@@ -156,11 +153,11 @@ object SearchEngineSpecs extends Specification {
   "\nSearchEngine holds a UserGroup that" should {
 
     "Return search history from all users" in {
-      smallSearchEngine.engineSearchHistory == AB(weatherSearch)
+      smallSearchEngine.engineSearchHistory.run == AB(weatherSearch)
     }
     "Find the SearchEngine's most frequent search" in {
-      (unpopularSearchEngine.mostFrequentSearch === List.empty) &&
-      (popularSearchEngine.mostFrequentSearch === List("Cardinals"))
+      (unpopularSearchEngine.mostFrequentSearch.run === List.empty) &&
+      (popularSearchEngine.mostFrequentSearch.run === List("Cardinals"))
     }
   }
 
@@ -178,36 +175,10 @@ object SearchEngineSpecs extends Specification {
   // LookItUp Tests
   "\nLookItUp SearchEngine" should {
 
-    step(LookItUp.addSearchHistory(Lewis.name, testSearch))
+    step(LookItUp.addSearchHistory(Lewis.name, "test").run)
     "Add a search to user's history" in {
-      !LookItUp.engineSearchHistory.isEmpty
+      !LookItUp.engineSearchHistory.run.isEmpty
     }
-  }
-
-  // Akka Actor Tests
-  "\nLookItUp Actor" should {
-
-    implicit val system = ActorSystem()
-    val probe = TestProbe()
-    val liuEngine = new LookItUp
-    val liuActor = system.actorOf(LIUActor.props(liuEngine))
-
-    "Create a new User" in {
-      liuActor.tell(LIUActor.CreateUser("TestProbe", "password"), probe.ref)
-      val response = probe.expectMsgType[ActorSuccess]
-      (liuEngine.contains("TestProbe") == true)
-    }
-
-    "Changes User's password" in {
-      liuActor.tell(LIUActor.ChangePassword("TestProbe", "newPassword"), probe.ref)
-      val response = probe.expectMsgType[ActorSuccess]
-      (liuEngine.users("TestProbe").password == "newPassword")
-    }
-
-    "Add search to User's history" in {
-      liuActor.tell(LIUActor.AddSearchHistory("TestProbe", testSearch), probe.ref)
-      val response = probe.expectMsgType[ActorSuccess]
-      (liuEngine.users("TestProbe").searchHistory.contains(testSearch) == true)    }
   }
 
   // LookItUp Server Tests
