@@ -4,6 +4,7 @@ package lookitup
 import httpclient.DuckDuckGoAPI._
 import searchengine.SearchEngine._
 
+import scalaz.concurrent.Task
 import scala.collection.mutable
 
 
@@ -15,12 +16,10 @@ class LookItUp(users: mutable.Map[String,User] = mutable.Map.empty)
   }
 
   // Handle User Search Request
-  def addSearchHistory(username: String, searchResult: Search) =
-    get(username) match {
-      case None       => None
-      case Some(user) => {
-        user.searchHistory.create(searchResult)
-        update(user)
-      }
+  def addSearchHistory(username: String, searchString: String): Task[Search] = Task {
+    val searchResult = searchDDG(searchString)
+    users(username).searchHistory.create(searchResult)
+    searchResult
   }
+
 }
