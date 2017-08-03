@@ -7,6 +7,10 @@ import scala.collection.mutable.{ArrayBuffer => AB}
 import org.http4s._
 import org.http4s.dsl._
 
+import database.Connect._
+import database.Load._
+import database.Edit._
+
 
 object LookItUpMockRun {
 
@@ -50,8 +54,7 @@ object LookItUpMockRun {
     val lookItUp = new LookItUp(allUsers)
 
     // LookItUp client-API
-    class LIUAPI extends LookItUpAPI
-    val LIU = new LIUAPI
+    val LIU = new LookItUpAPI(database = "postgres")
 
 
     /******************************************************
@@ -81,5 +84,24 @@ object LookItUpMockRun {
     // LIU.getUserSearches("keith", "wordpass")
     // LIU.mostFrequentSearch
     // LIU.userMostFrequentSearch("keith", "wordpass")
+
+
+    // Playing with postgres and doobie
+    // val DB = connectToDB("postgres")
+    // var lookitup = loadDB(DB)
+    // println(lookitup)
+    //
+    // val addUser = addUserDB(Mark, DB).run
+    //
+    // val changePassword = changePasswordDB("Mark", "newpassword", DB).run
+    // lookitup = loadDB(DB)
+    // println(lookitup)
+
+    // val addSearch = addSearchDB("Mark", cardinalsSearch, DB).run
+    // lookitup = loadDB(DB)
+    // println(lookitup)
+    //
+    // val clear = clearAllTables(DB).run
+
   }
 }

@@ -62,8 +62,7 @@ object SearchEngineSpecs extends Specification {
   val LookItUp = new LookItUp(List(Lewis))
 
   // Create LookItUpAPI
-  class LIUAPI extends LookItUpAPI
-  val LIU = new LIUAPI
+  val LIU = new LookItUpAPI(database = "postgres")
 
   // Create vars to hold responses
   val emptyResponse = HttpResponse(Map.empty, "", 1)
@@ -182,6 +181,9 @@ object SearchEngineSpecs extends Specification {
   }
 
   // LookItUp Server Tests
+
+  // Connects to the test database
+  step(LIU.connectToDB)
   "\nLookItUpAPI is a client-API that" should {
 
     "Ping server" in {
@@ -212,5 +214,7 @@ object SearchEngineSpecs extends Specification {
       LIU.userMostFrequentSearch("keith", "wordpass").statusCode == 200
     }
   }
+  // Empties database after testing
+  step(LIU.clearDB)
 
 }

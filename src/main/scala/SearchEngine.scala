@@ -40,6 +40,7 @@ object SearchEngine {
       }
     }
     def delete(s: Search): Unit = history -= s
+    def length: Int = history.length
   }
 
   // A search engine user that holds name, password and search history
@@ -91,6 +92,14 @@ object SearchEngine {
       this(name, mutable.Map(users.map(user => (user.name, user)): _*))
     }
 
+    override def toString: String = {
+      var str = s"Search Engine: $name\n"
+      for (u <- users.values) {
+        str = str + s"\t${u.name}: ${u.password} : ${u.searchHistory.length} searches made\n"
+      }
+      return str + "\n"
+    }
+
     def engineSearchHistory: Task[List[Search]] = Task {
       (for (usr <- getAll) yield usr.searchHistory.getAll).flatten
     }
@@ -114,9 +123,10 @@ object SearchEngine {
       users(username).mostFrequentSearch
     }
 
-    def createUser(username: String, password: String): Task[String] = Task {
-      create(new User(username, password))
-      s"[$username] user created."
+    def createUser(username: String, password: String): Task[User] = Task {
+      val newUser = new User(username, password)
+      create(newUser)
+      newUser
     }
 
     def changePassword(username: String, newPassword: String): Task[String] = Task {
