@@ -40,6 +40,7 @@ object SearchEngine {
       }
     }
     def delete(s: Search): Unit = history -= s
+    def length: Int = history.length
   }
 
   // A search engine user that holds name, password and search history
@@ -89,6 +90,14 @@ object SearchEngine {
     // Allows SearchEngine to be constructed with a List of users
     def this(name: String, users: List[User]) {
       this(name, mutable.Map(users.map(user => (user.name, user)): _*))
+    }
+
+    override def toString: String = {
+      var str = s"Search Engine: $name\n"
+      for (u <- users.values) {
+        str = str + s"\t${u.name}: ${u.searchHistory.length} searches made\n"
+      }
+      return str + "\n"
     }
 
     def engineSearchHistory: Task[List[Search]] = Task {

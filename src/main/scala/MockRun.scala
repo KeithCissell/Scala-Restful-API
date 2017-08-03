@@ -7,7 +7,6 @@ import scala.collection.mutable.{ArrayBuffer => AB}
 import org.http4s._
 import org.http4s.dsl._
 
-import database.Connect._
 import database.Load._
 
 
@@ -87,8 +86,8 @@ object LookItUpMockRun {
 
 
     // Playing with postgres and doobie
-    val dataBase = connectToDB("postgres")
-    //loadDB(dataBase)
+    val lookitup = loadDB("postgres")
+    println(lookitup)
 
   }
 }
