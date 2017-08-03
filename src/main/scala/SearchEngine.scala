@@ -95,7 +95,7 @@ object SearchEngine {
     override def toString: String = {
       var str = s"Search Engine: $name\n"
       for (u <- users.values) {
-        str = str + s"\t${u.name}: ${u.searchHistory.length} searches made\n"
+        str = str + s"\t${u.name}: ${u.password} : ${u.searchHistory.length} searches made\n"
       }
       return str + "\n"
     }
@@ -123,9 +123,10 @@ object SearchEngine {
       users(username).mostFrequentSearch
     }
 
-    def createUser(username: String, password: String): Task[String] = Task {
-      create(new User(username, password))
-      s"[$username] user created."
+    def createUser(username: String, password: String): Task[User] = Task {
+      val newUser = new User(username, password)
+      create(newUser)
+      newUser
     }
 
     def changePassword(username: String, newPassword: String): Task[String] = Task {

@@ -11,9 +11,25 @@ import scala.collection.mutable.{ArrayBuffer => AB}
 
 object LookItUpAPI {
 
-  trait LookItUpAPI extends HttpClient {
+  class LookItUpAPI(
 
-    val host = "http://localhost:8080"
+    val host: String = "http://localhost:8080",
+    val database: String = "lookitup"
+
+  ) extends HttpClient {
+
+    def connectToDB: HttpResponse = {
+      val reqURL = host + "/connect_to_database"
+      val reqBody = Map("database" -> database)
+      val resp = executeHttpPost(reqURL, reqBody)
+      // Handle response
+      val message = resp.statusCode match {
+        case 200  => s"Connected to Database: $database"
+        case _    => s"ERROR. Status Code: ${resp.statusCode}"
+      }
+      println(message)
+      return resp
+    }
 
     def ping: HttpResponse = {
       val reqURL = host + "/ping"
@@ -114,6 +130,18 @@ object LookItUpAPI {
       val message = resp.statusCode match {
         case 200  => s"${resp.body}"
         case 403  => s"Invalid username/password combo"
+        case _    => s"ERROR. Status Code: ${resp.statusCode}"
+      }
+      println(message)
+      return resp
+    }
+
+    def clearDB: HttpResponse = {
+      val reqURL = host + "/clear_database"
+      val resp = executeHttpGet(reqURL)
+      // Handle response
+      val message = resp.statusCode match {
+        case 200  => "Database Cleared"
         case _    => s"ERROR. Status Code: ${resp.statusCode}"
       }
       println(message)

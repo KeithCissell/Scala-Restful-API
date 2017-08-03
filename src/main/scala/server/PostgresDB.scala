@@ -1,18 +1,16 @@
 package database
 
 import scalaz._
-import scalaz.effect.IO
 import scalaz.concurrent.Task
 import Scalaz._
 import doobie.imports._
-import doobie.util.transactor
+
+import lookitup._
+import searchengine.SearchEngine._
 import scala.collection.mutable.{ArrayBuffer => AB}
 
 
-
-object Load {
-  import searchengine.SearchEngine._
-  import lookitup._
+object Connect {
 
   def connectToDB(database: String): Transactor[Task] = {
     DriverManagerTransactor[Task] (
@@ -23,13 +21,17 @@ object Load {
     )
   }
 
-  def loadDB(database: String): LookItUp = {
+}
+
+
+object Load {
+
+  def loadDB(DB: Transactor[Task]): LookItUp = {
     val LIU = new LookItUp
-    val DB = connectToDB(database)
 
     // Get all users from DB and add to LIU
     val users: List[(String,String)] =
-      sql"select username, password from users"
+      sql"SELECT username, password FROM users"
       .query[(String,String)]
       .list
       .transact(DB)
@@ -47,7 +49,7 @@ object Load {
 
   def loadUser(username: String, password: String, DB: Transactor[Task]): User = {
     val searches: List[String] =
-      sql"select search_string from searches where username = $username"
+      sql"SELECT search_string FROM searches WHERE username = $username"
       .query[String]
       .list
       .transact(DB)
@@ -61,7 +63,7 @@ object Load {
 
   def loadSearch(searchString: String, DB: Transactor[Task]): Search = {
     val results: List[(String,String)] =
-      sql"select title, description from results where search_string = $searchString"
+      sql"SELECT title, description FROM results WHERE search_string = $searchString"
       .query[(String,String)]
       .list
       .transact(DB)
@@ -73,9 +75,67 @@ object Load {
       new Result(title, description)
     }).to[AB]
 
-    println(resultsArray)
+    return new Search(searchString, resultsArray)
+  }
 
-    return new Search(searchString)
+}
+
+
+object Edit {
+
+  def addUserDB(user: User, DB: Transactor[Task]): Task[Unit] = Task {
+    val username = user.name
+    val password = user.password
+    sql"INSERT INTO users VALUES ($username, $password)"
+      .update.run
+      .transact(DB)
+      .run
+  }
+
+  def changePasswordDB(username: String, newPassword: String, DB: Transactor[Task]): Task[Unit] = Task {
+    sql"UPDATE users SET password = $newPassword WHERE username = $username"
+      .update.run
+      .transact(DB)
+      .run
+  }
+
+  def addSearchDB(username: String, search: Search, DB: Transactor[Task]): Task[Unit] = Task {
+    val searchString = search.value
+    val results = search.results
+
+    sql"INSERT INTO searches VALUES ($username, $searchString)"
+      .update.run
+      .transact(DB)
+      .run
+
+    for (r <- results) addResultDB(searchString, r, DB).run
+  }
+
+  def addResultDB(searchString: String, result: Result, DB: Transactor[Task]): Task[Unit] = Task {
+    val title = result.title
+    val description = result.description
+
+    sql"INSERT INTO results VALUES ($searchString, $title, $description)"
+      .update.run
+      .transact(DB)
+      .run
+  }
+
+
+
+  def clearAllTables(DB: Transactor[Task]): Task[Unit] = Task {
+    sql"DELETE FROM users"
+      .update.run
+      .transact(DB)
+      .run
+    sql"DELETE FROM searches"
+      .update.run
+      .transact(DB)
+      .run
+    sql"DELETE FROM results"
+      .update.run
+      .transact(DB)
+      .run
   }
 
 }
